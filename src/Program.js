@@ -1,14 +1,14 @@
 /** Composition root / src/Program.js: wires data, service, view, shell and PWA. */
-import { StkGovShell, renderStkIcons } from '../vendor/stk-gov/stk-gov-shell.js?v=20261104-1639';
-import { StkGovPwa } from '../vendor/stk-gov/stk-gov-pwa.js?v=20261104-1639';
-import { PriceMonitorService } from './application/PriceMonitorService.js?v=20261104-1639';
-import { downloadCsv } from './infrastructure/CsvExporter.js?v=20261104-1639';
-import { BASKET_DATA } from './infrastructure/data/BasketData.js?v=20261104-1639';
-import { REAL_ESTATE_DATA } from './infrastructure/data/RealEstateData.js?v=20261104-1639';
-import { SAO_PAULO_MUNICIPALITIES } from './infrastructure/data/SaoPauloData.js?v=20261104-1639';
-import { SOURCES_DATA } from './infrastructure/data/SourcesData.js?v=20261104-1639';
-import { PriceMonitorView } from './ui/PriceMonitorView.js?v=20261104-1639';
-import { SVG_ICONS } from './ui/SvgIcons.js?v=20261104-1639';
+import { StkGovShell, renderStkIcons } from '../vendor/stk-gov/stk-gov-shell.js?v=20261104-1703';
+import { StkGovPwa } from '../vendor/stk-gov/stk-gov-pwa.js?v=20261104-1703';
+import { PriceMonitorService } from './application/PriceMonitorService.js?v=20261104-1703';
+import { downloadCsv } from './infrastructure/CsvExporter.js?v=20261104-1703';
+import { BASKET_DATA } from './infrastructure/data/BasketData.js?v=20261104-1703';
+import { REAL_ESTATE_DATA } from './infrastructure/data/RealEstateData.js?v=20261104-1703';
+import { SAO_PAULO_MUNICIPALITIES } from './infrastructure/data/SaoPauloData.js?v=20261104-1703';
+import { SOURCES_DATA } from './infrastructure/data/SourcesData.js?v=20261104-1703';
+import { PriceMonitorView } from './ui/PriceMonitorView.js?v=20261104-1703';
+import { SVG_ICONS } from './ui/SvgIcons.js?v=20261104-1703';
 
 function showToast(message) {
   const toast = document.getElementById('appToast');

@@ -23,7 +23,7 @@
 .tile-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .panel .tile-grid { margin-top: 12px; }
 .tile { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 16px; }
-.tile-label { font-size: 0.8125rem; color: var(--text-secondary); }
+.tile-label { font-size: 0.8125rem; color: var(--text-secondary); overflow-wrap: anywhere; }
 .tile-value { font-family: var(--mono); font-size: 1.375rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
 .tile-value small { margin-left: 2px; font-size: 0.75rem; font-weight: 400; color: var(--text-secondary); }
 .tile-detail { font-size: 0.75rem; color: var(--text-secondary); }

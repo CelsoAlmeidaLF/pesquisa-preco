@@ -116,6 +116,22 @@ try {
   await definir('capitalSearch', '');
   assert((await texto('breakdownNote')).includes('Total publicado: R$'), 'Conta da cesta mostra soma e total publicado');
 
+  assert(await avaliar('customWageCapital.options.length') === 27, 'Calculadora de renda lista as 27 capitais');
+  assert(await avaliar('customWageCapital.selectedOptions[0].textContent') === 'São Paulo (SP)', 'Calculadora de renda começa em São Paulo');
+  assert(await avaliar('customWageTiles.children.length') === 0 && (await texto('customWageNote')).includes('Preencha sua renda'), 'Renda vazia orienta o preenchimento');
+  await definir('customWageInput', '3000');
+  const renda = await texto('customWageTiles');
+  assert(await avaliar('customWageTiles.children.length') === 4 && ['67h39', '8,5', '30,75%', '922,51'].every(v => renda.includes(v)), 'Renda de R$ 3.000 em São Paulo: 67h39, 8,5 dias, 30,75%, R$ 922,51');
+  await capturar('desktop-renda');
+  await definir('customWageCapital', String(await avaliar('[...customWageCapital.options].find(o => o.textContent === "Aracaju (SE)").value')));
+  assert((await texto('customWageTiles')).includes('587,76'), 'Trocar a capital recalcula a cesta');
+  await definir('customWageInput', '500');
+  assert((await texto('customWageNote')).includes('mais do que a renda') && (await texto('customWageTiles')).includes('117,55%'), 'Renda menor que a cesta passa de 100% e avisa');
+  for (const invalido of ['', '0', '-50', '99', '1000001']) {
+    await definir('customWageInput', invalido);
+    assert(await avaliar('customWageTiles.children.length') === 0 && (await texto('customWageNote')).includes('Preencha sua renda'), `Renda inválida (${invalido || 'vazia'}) orienta o preenchimento`);
+  }
+
   await aba('tabMunicipios');
   assert(await avaliar('document.querySelectorAll("#municipalityTable tbody tr").length') === 28, '28 municípios de SP');
   const municipios = await texto('municipalityTable');
@@ -167,6 +183,8 @@ try {
     }
     await avaliar('document.querySelector(".bottom-nav-item[data-tab=tabCapitais]").click()'); await esperar(200);
     assert(await avaliar('getComputedStyle(document.querySelector("#capitalTable td")).display') === 'flex', 'Tabela vira cartões');
+    await definir('customWageInput', '3000');
+    assert(await avaliar('customWageTiles.children.length === 4 && [...document.querySelectorAll("#customWageTiles .tile > *")].every(e => e.scrollWidth <= e.clientWidth + 1)') && await semRolagem(), 'Cartões da renda cabem sem cortar');
     await avaliar('document.querySelector(".bottom-nav-item[data-tab=tabPanorama]").click()'); await esperar(200);
     assert(await avaliar('[...document.querySelectorAll("#tabPanorama .tile-value")].every(e => e.scrollWidth <= e.clientWidth + 1)'), 'Valores dos cartões cabem sem cortar');
   }

@@ -58,8 +58,9 @@ export class PriceMonitorView {
     });
     this.renderOverview();
     this.renderCapitals();
-    this.fillBreakdownSelect();
+    this.fillCapitalSelects();
     this.renderBreakdown();
+    this.renderCustomWage();
     this.fillRegionSelect();
     this.renderMunicipalities();
     this.fillEstimateCities();
@@ -72,6 +73,8 @@ export class PriceMonitorView {
     this.$('capitalSearch').addEventListener('input', () => this.renderCapitals());
     this.$('capitalSort').addEventListener('change', () => this.renderCapitals());
     this.$('breakdownCapital').addEventListener('change', () => this.renderBreakdown());
+    this.$('customWageCapital').addEventListener('change', () => this.renderCustomWage());
+    this.$('customWageInput').addEventListener('input', () => this.renderCustomWage());
     this.$('municipalitySearch').addEventListener('input', () => this.renderMunicipalities());
     this.$('municipalityRegion').addEventListener('change', () => this.renderMunicipalities());
     this.$('estateSearch').addEventListener('input', () => this.renderRealEstate());
@@ -141,12 +144,13 @@ export class PriceMonitorView {
     ], capitals);
   }
 
-  fillBreakdownSelect() {
+  fillCapitalSelects() {
     const options = this.service.capitals({ sort: 'name-asc' })
       .map(c => [c.capital, c])
       .sort(([a], [b]) => a.localeCompare(b, 'pt-BR'))
       .map(([, c]) => `<option value="${c.ibgeCode}"${c.capital === 'São Paulo' ? ' selected' : ''}>${escapeHtml(c.capital)} (${escapeHtml(c.uf)})</option>`);
     this.$('breakdownCapital').innerHTML = options.join('');
+    this.$('customWageCapital').innerHTML = options.join('');
   }
 
   renderBreakdown() {
@@ -166,6 +170,26 @@ export class PriceMonitorView {
     this.$('breakdownNote').textContent = `Soma calculada: ${currency.format(b.calculatedTotal)}. Total publicado: ${currency.format(b.publishedTotal)}.`
       + (difference > 0 ? ` A diferença de ${currency.format(difference)} é arredondamento: o preço publicado tem só duas casas.` : '')
       + ` Região ${b.capital.decreeRegion} do Decreto-Lei 399.`;
+  }
+
+  renderCustomWage() {
+    const input = this.$('customWageInput');
+    const [min, max] = [Number(input.min), Number(input.max)];
+    const wage = input.value === '' ? Number.NaN : Number(input.value);
+    if (!(wage >= min && wage <= max)) {
+      this.$('customWageTiles').innerHTML = '';
+      this.$('customWageNote').textContent = `Preencha sua renda mensal líquida com um valor entre ${wholeCurrency.format(min)} e ${wholeCurrency.format(max)} para ver o resultado.`;
+      return;
+    }
+    const p = this.service.customPurchasingPower({ capitalCode: Number(this.$('customWageCapital').value), monthlyWage: wage });
+    this.$('customWageTiles').innerHTML = [
+      tile('Tempo de trabalho', time(p.workTime), 'Jornada de 220 horas por mês'),
+      tile('Dias de trabalho (jornada 8h)', oneDecimal.format(p.workDays)),
+      tile('Comprometi\u00ADmento da renda', percent(p.shareOfWage), `Sobre ${currency.format(p.monthlyWage)} por mês`),
+      tile('Custo da cesta', money(p.basketValue), `${p.capital.capital} (${p.capital.uf}), ${this.service.basket.period}`),
+    ].join('');
+    this.$('customWageNote').textContent = (p.shareOfWage > 100 ? 'A cesta custa mais do que a renda informada. ' : '')
+      + 'Conta feita com a sua renda líquida, para uma pessoa adulta. A tabela acima usa o salário mínimo bruto para o tempo de trabalho, por isso os números não são comparáveis. O valor digitado não sai do seu aparelho.';
   }
 
   fillRegionSelect() {

@@ -7,6 +7,8 @@
 export const NET_WAGE_FACTOR = 0.925;
 /** Constitutional monthly working hours used by DIEESE. */
 export const MONTHLY_WORK_HOURS = 220;
+/** Working hours of a regular day, used to turn hours into estimated working days. */
+export const DAILY_WORK_HOURS = 8;
 /** Family of two adults and two children consumes as much as three adults (DIEESE). */
 export const BASKETS_PER_FAMILY = 3;
 /** Share of food in the family budget used by DIEESE (POF 1994/1995). */
@@ -56,11 +58,30 @@ export function wagePercent(basketValue, minimumWage) {
   return basketValue / (minimumWage * NET_WAGE_FACTOR) * 100;
 }
 
-export function workTime(basketValue, minimumWage) {
+/** Multiplies before dividing: the other order loses one minute on exact results (R$ 230 / R$ 100 x 220 h). */
+export function workTime(basketValue, wage, monthlyHours = MONTHLY_WORK_HOURS) {
   assertPositive(basketValue, 'Valor da cesta');
-  assertPositive(minimumWage, 'Salário mínimo');
-  const totalMinutes = Math.floor(basketValue / minimumWage * MONTHLY_WORK_HOURS * 60);
+  assertPositive(wage, 'Salário');
+  assertPositive(monthlyHours, 'Jornada mensal');
+  const totalMinutes = Math.floor(basketValue * monthlyHours * 60 / wage);
   return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
+}
+
+/**
+ * What the basket costs to someone with the given net income.
+ * Unlike the DIEESE work time, which uses the gross minimum wage, every figure here uses the net income.
+ */
+export function customPurchasingPower(basketValue, monthlyNetWage, monthlyHours = MONTHLY_WORK_HOURS) {
+  assertPositive(basketValue, 'Valor da cesta');
+  assertPositive(monthlyNetWage, 'Renda mensal líquida');
+  assertPositive(monthlyHours, 'Jornada mensal');
+  return {
+    basketValue,
+    monthlyWage: monthlyNetWage,
+    shareOfWage: basketValue / monthlyNetWage * 100,
+    workTime: workTime(basketValue, monthlyNetWage, monthlyHours),
+    workDays: basketValue * monthlyHours / monthlyNetWage / DAILY_WORK_HOURS,
+  };
 }
 
 export function neededMinimumWage(highestBasket) {

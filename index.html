@@ -23,9 +23,9 @@
   <meta name="apple-mobile-web-app-title" content="Preços Brasil">
 
   <!-- Design system comum dos projetos 8.X (cópia de _design-system/, não editar aqui) + estilos do conteúdo -->
-  <link rel="stylesheet" href="css/fonts.css?v=20261104-1639">
-  <link rel="stylesheet" href="vendor/stk-gov/stk-gov.css?v=20261104-1639">
-  <link rel="stylesheet" href="css/style.css?v=20261104-1639">
+  <link rel="stylesheet" href="css/fonts.css?v=20261104-1703">
+  <link rel="stylesheet" href="vendor/stk-gov/stk-gov.css?v=20261104-1703">
+  <link rel="stylesheet" href="css/style.css?v=20261104-1703">
 </head>
 <body>
   <div id="appFatalError" class="app-fatal-error" role="alert" hidden>
@@ -149,6 +149,16 @@
             </div>
             <div class="table-wrap"><table class="data-table" id="breakdownTable"></table></div>
             <p class="panel-sub" id="breakdownNote"></p>
+          </section>
+          <section class="glass-panel panel" id="customWagePanel">
+            <h3>Poder de compra do cidadão: Minha renda × Cesta básica</h3>
+            <p class="panel-sub">Informe sua renda mensal líquida para saber quantas horas do seu trabalho pagam a alimentação básica.</p>
+            <div class="toolbar toolbar-flat">
+              <label class="field"><span>Capital</span><select id="customWageCapital"></select></label>
+              <label class="field"><span>Minha renda mensal líquida (R$)</span><input type="number" id="customWageInput" placeholder="Ex: 3000" min="100" max="1000000" step="50"></label>
+            </div>
+            <div class="tile-grid" id="customWageTiles"></div>
+            <p class="panel-sub" id="customWageNote"></p>
           </section>
         </div>
 
@@ -298,6 +308,6 @@
 
   <div class="stk-toast" id="appToast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="src/Program.js?v=20261104-1639"></script>
+  <script type="module" src="src/Program.js?v=20261104-1703"></script>
 </body>
 </html>

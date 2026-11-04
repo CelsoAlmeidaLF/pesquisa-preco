@@ -2,8 +2,8 @@
  * Application / src/application/PriceMonitorService.js
  * Use cases of the app. Receives the datasets by injection and returns plain view models.
  */
-import { basketCost, basketLines, ITEM_CATALOG, neededMinimumWage, priceRange, wagePercent, workTime } from '../domain/BasketCalculator.js?v=20261104-1639';
-import { COMMERCIAL_MAX_AREA, estimateProperty } from '../domain/RealEstateCalculator.js?v=20261104-1639';
+import { basketCost, basketLines, customPurchasingPower, ITEM_CATALOG, neededMinimumWage, priceRange, wagePercent, workTime } from '../domain/BasketCalculator.js?v=20261104-1703';
+import { COMMERCIAL_MAX_AREA, estimateProperty } from '../domain/RealEstateCalculator.js?v=20261104-1703';
 
 const normalize = text => String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const byName = (a, b, key) => a[key].localeCompare(b[key], 'pt-BR');
@@ -78,6 +78,12 @@ export class PriceMonitorService {
       calculatedTotal: basketCost(capital.prices, quantities),
       publishedTotal: capital.publishedTotal,
     };
+  }
+
+  /** An unknown code falls back to the first capital of the dataset. */
+  customPurchasingPower({ capitalCode, monthlyWage }) {
+    const capital = this.basket.capitals.find(c => c.ibgeCode === capitalCode) ?? this.basket.capitals[0];
+    return { capital, ...customPurchasingPower(capital.publishedTotal, monthlyWage) };
   }
 
   spMunicipalities({ query = '', region = 'ALL' } = {}) {
