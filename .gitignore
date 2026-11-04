@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+*.log
+__pycache__/
+# Arquivos de terceiros: baixados por npm run dados:baixar, com URL e SHA-256 na aba Fontes e método
+data/raw/

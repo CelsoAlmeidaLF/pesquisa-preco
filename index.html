@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1C1C1C">
+  <meta name="description" content="Cesta básica nas 27 capitais e preços de compra e aluguel de imóveis residenciais e comerciais, com dados do DIEESE/Conab, FipeZAP e IBGE.">
+  <title>Pesquisa de Preços Brasil</title>
+
+  <!-- Prévia ao compartilhar o link -->
+  <meta property="og:title" content="Pesquisa de Preços Brasil">
+  <meta property="og:description" content="Cesta básica nas 27 capitais e preços de imóveis, com a fonte de cada número.">
+  <meta property="og:type" content="website">
+
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/app-icon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/app-icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Preços Brasil">
+
+  <!-- Design system comum dos projetos 8.X (cópia de _design-system/, não editar aqui) + estilos do conteúdo -->
+  <link rel="stylesheet" href="css/fonts.css?v=20261104-1639">
+  <link rel="stylesheet" href="vendor/stk-gov/stk-gov.css?v=20261104-1639">
+  <link rel="stylesheet" href="css/style.css?v=20261104-1639">
+</head>
+<body>
+  <div id="appFatalError" class="app-fatal-error" role="alert" hidden>
+    <strong>Não foi possível carregar a pesquisa de preços.</strong>
+    <p id="appFatalErrorDetail">Recarregue a página. Se continuar, abra o site por um servidor local (ex.: <code>python3 -m http.server</code>).</p>
+  </div>
+
+  <header class="app-topbar" id="appTopbar">
+    <div class="topbar-inner">
+      <div class="topbar-brand-section">
+        <button type="button" class="btn-hamburger" id="btnToggleSidebar" aria-controls="appSidebar" aria-expanded="true" aria-label="Recolher menu" title="Recolher menu">
+          <span data-stk-icon="panelLeft"></span>
+        </button>
+        <div class="topbar-divider"></div>
+        <div class="topbar-brand">
+          <img class="app-logo" src="icons/app-icon-64.png" alt="" width="36" height="36">
+          <div class="min-w-0">
+            <div class="brand-title-row"><h1 class="brand-heading">Pesquisa de Preços</h1></div>
+            <p class="brand-subtext">Systekna Governo • Cesta básica e imóveis</p>
+          </div>
+        </div>
+      </div>
+      <div class="topbar-controls-section">
+        <div class="topbar-actions-wrap">
+          <button type="button" class="action-btn action-btn-secondary" id="btnInstallApp" hidden>
+            <span data-stk-icon="download"></span><span class="action-btn-text">Instalar</span>
+          </button>
+          <button type="button" class="action-btn action-btn-primary" id="btnExportCsv" aria-label="Baixar CSV desta aba">
+            <span data-stk-icon="fileCsv"></span><span class="action-btn-text">CSV</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-main-layout">
+    <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+    <aside class="app-sidebar" id="appSidebar" aria-label="Navegação principal">
+      <div class="sidebar-top-section">
+        <div class="sidebar-drawer-header">
+          <div class="sidebar-drawer-brand"><img class="app-logo app-logo-sm" src="icons/app-icon-64.png" alt=""><span>Preços Brasil</span></div>
+          <button type="button" class="btn-sidebar-close" id="btnCloseSidebar" aria-label="Fechar menu"><span data-stk-icon="close"></span></button>
+        </div>
+        <div class="sidebar-desktop-header"><span class="sidebar-title-text">Pesquisa</span></div>
+        <nav class="sidebar-nav-list" role="tablist" aria-orientation="vertical">
+          <button type="button" class="sidebar-nav-item active" data-tab="tabPanorama" role="tab" aria-selected="true" aria-controls="tabPanorama">
+            <span class="nav-item-inner"><span class="nav-icon"><span data-stk-icon="layout"></span></span><span class="nav-label">Panorama</span></span>
+          </button>
+          <button type="button" class="sidebar-nav-item" data-tab="tabCapitais" role="tab" aria-selected="false" aria-controls="tabCapitais">
+            <span class="nav-item-inner"><span class="nav-icon"><span data-stk-icon="basket"></span></span><span class="nav-label">Cesta por capital</span></span>
+          </button>
+          <button type="button" class="sidebar-nav-item" data-tab="tabMunicipios" role="tab" aria-selected="false" aria-controls="tabMunicipios">
+            <span class="nav-item-inner"><span class="nav-icon"><span data-stk-icon="mapPin"></span></span><span class="nav-label">Municípios de SP</span></span>
+          </button>
+          <button type="button" class="sidebar-nav-item" data-tab="tabImoveis" role="tab" aria-selected="false" aria-controls="tabImoveis">
+            <span class="nav-item-inner"><span class="nav-icon"><span data-stk-icon="building"></span></span><span class="nav-label">Imóveis</span></span>
+          </button>
+          <button type="button" class="sidebar-nav-item" data-tab="tabFontes" role="tab" aria-selected="false" aria-controls="tabFontes">
+            <span class="nav-item-inner"><span class="nav-icon"><span data-stk-icon="book"></span></span><span class="nav-label">Fontes e método</span></span>
+          </button>
+        </nav>
+      </div>
+    </aside>
+
+    <div class="app-content-area">
+      <main class="content-wrapper">
+
+        <!-- PANORAMA -->
+        <div class="tab-pane active" id="tabPanorama" role="tabpanel">
+          <div class="page-head">
+            <h2>Panorama de <span data-bind="period"></span></h2>
+            <p>Dados mais recentes publicados até 4 de novembro de 2026. O DIEESE ainda não divulgou outubro.</p>
+          </div>
+          <h3 class="section-title">Cesta básica</h3>
+          <div class="tile-grid" id="basketTiles"></div>
+          <h3 class="section-title">Imóveis: média do Índice FipeZAP</h3>
+          <div class="tile-grid" id="marketTiles"></div>
+          <p class="note"><span data-stk-icon="info"></span><span>A cesta do Norte e do Nordeste tem composição diferente: menos carne, sem batata e farinha de mandioca no lugar da de trigo. Por isso, parte da diferença de valor entre regiões vem da lista de produtos, não só dos preços.</span></p>
+          <section class="glass-panel panel">
+            <h3>Menor e maior preço de cada item nas capitais</h3>
+            <p class="panel-sub">A média é simples, entre as capitais que pesquisam o item. Não é um preço oficial do Brasil.</p>
+            <div class="table-wrap"><table class="data-table" id="itemTable"></table></div>
+          </section>
+        </div>
+
+        <!-- CESTA POR CAPITAL -->
+        <div class="tab-pane" id="tabCapitais" role="tabpanel">
+          <div class="page-head">
+            <h2>Cesta básica nas 27 capitais</h2>
+            <p>Custo mensal para uma pessoa adulta, em <span data-bind="period"></span>. Fonte: Conab/DIEESE.</p>
+          </div>
+          <div class="toolbar">
+            <label class="field field-grow"><span>Buscar</span><input type="search" id="capitalSearch" placeholder="Estado, capital ou sigla" autocomplete="off"></label>
+            <label class="field"><span>Ordenar por</span>
+              <select id="capitalSort">
+                <option value="basket-desc">Cesta: maior valor</option>
+                <option value="basket-asc">Cesta: menor valor</option>
+                <option value="change-desc">Maior alta em 12 meses</option>
+                <option value="name-asc">Estado (A–Z)</option>
+              </select>
+            </label>
+          </div>
+          <section class="glass-panel panel">
+            <h3>Custo da cesta por capital</h3>
+            <ul class="bar-legend" aria-label="Legenda das regiões do Decreto-Lei 399">
+              <li><i class="swatch region-1"></i>Região 1: ES, MG, RJ, SP, GO, DF</li>
+              <li><i class="swatch region-2"></i>Região 2: Norte e Nordeste</li>
+              <li><i class="swatch region-3"></i>Região 3: Sul, MT, MS</li>
+            </ul>
+            <div id="capitalBars" class="bar-list"></div>
+          </section>
+          <section class="glass-panel panel">
+            <h3>Preços dos itens por capital</h3>
+            <div class="table-wrap"><table class="data-table" id="capitalTable"></table></div>
+          </section>
+          <section class="glass-panel panel">
+            <h3>Como a cesta é calculada</h3>
+            <p class="panel-sub">Quantidade definida pelo Decreto-Lei 399 × preço médio coletado.</p>
+            <div class="toolbar toolbar-flat">
+              <label class="field"><span>Capital</span><select id="breakdownCapital"></select></label>
+            </div>
+            <div class="table-wrap"><table class="data-table" id="breakdownTable"></table></div>
+            <p class="panel-sub" id="breakdownNote"></p>
+          </section>
+        </div>
+
+        <!-- MUNICÍPIOS DE SP -->
+        <div class="tab-pane" id="tabMunicipios" role="tabpanel">
+          <div class="page-head">
+            <h2>Municípios do Estado de São Paulo</h2>
+            <p>Nomes, códigos e regiões do IBGE. Imóveis pelo Índice FipeZAP, em <span data-bind="period"></span>.</p>
+          </div>
+          <p class="note note-warn"><span data-stk-icon="alert"></span><span>Não há pesquisa oficial de cesta básica para os municípios paulistas: o DIEESE só cobre as capitais. Por isso, este app não mostra preço de alimentos nessas cidades. Onde aparece "sem dado", a fonte não publica o valor.</span></p>
+          <div class="toolbar">
+            <label class="field field-grow"><span>Buscar</span><input type="search" id="municipalitySearch" placeholder="Município ou região" autocomplete="off"></label>
+            <label class="field"><span>Região intermediária (IBGE)</span><select id="municipalityRegion"></select></label>
+          </div>
+          <section class="glass-panel panel">
+            <h3 id="municipalityCount">Municípios</h3>
+            <div class="table-wrap"><table class="data-table" id="municipalityTable"></table></div>
+          </section>
+        </div>
+
+        <!-- IMÓVEIS -->
+        <div class="tab-pane" id="tabImoveis" role="tabpanel">
+          <div class="page-head">
+            <h2>Compra e aluguel de imóveis</h2>
+            <p>Preço médio de anúncios, por m², em <span data-bind="period"></span>. Fonte: Índice FipeZAP.</p>
+          </div>
+          <div class="toolbar">
+            <div class="segmented-control" role="group" aria-label="Tipo de imóvel">
+              <button type="button" class="segmented-control-btn active" data-segment="residential" aria-pressed="true">Residencial</button>
+              <button type="button" class="segmented-control-btn" data-segment="commercial" aria-pressed="false">Comercial</button>
+            </div>
+            <label class="field field-grow"><span>Buscar</span><input type="search" id="estateSearch" placeholder="Cidade, estado ou sigla" autocomplete="off"></label>
+            <label class="field"><span>Ordenar por</span>
+              <select id="estateSort">
+                <option value="sale-desc">Compra: maior valor</option>
+                <option value="rent-desc">Aluguel: maior valor</option>
+                <option value="yield-desc">Maior rentabilidade</option>
+                <option value="name-asc">Cidade (A–Z)</option>
+              </select>
+            </label>
+          </div>
+          <section class="glass-panel panel">
+            <h3>Quanto custa um imóvel</h3>
+            <p class="panel-sub">Estimativa: preço médio do m² × área. Um imóvel específico pode custar bem mais ou bem menos.</p>
+            <div class="toolbar toolbar-flat">
+              <label class="field field-grow"><span>Cidade</span><select id="estimateCity"></select></label>
+              <label class="field field-small"><span>Área (m²)</span><input type="number" id="estimateArea" min="1" max="2000" step="1" value="70" inputmode="numeric"></label>
+            </div>
+            <div class="tile-grid" id="estimateTiles"></div>
+            <p class="panel-sub" id="estimateNote"></p>
+          </section>
+          <div class="chart-pair">
+            <section class="glass-panel panel"><h3 id="saleBarsTitle"></h3><div id="saleBars" class="bar-list"></div></section>
+            <section class="glass-panel panel"><h3 id="rentBarsTitle"></h3><div id="rentBars" class="bar-list"></div></section>
+          </div>
+          <section class="glass-panel panel">
+            <h3 id="estateCount">Cidades</h3>
+            <div class="table-wrap"><table class="data-table" id="estateTable"></table></div>
+          </section>
+        </div>
+
+        <!-- FONTES -->
+        <div class="tab-pane" id="tabFontes" role="tabpanel">
+          <div class="page-head">
+            <h2>Fontes e método</h2>
+            <p>Todo número deste app vem dos arquivos abaixo, coletados em <span data-bind="collectedAt"></span>.</p>
+          </div>
+          <div class="source-grid">
+            <section class="glass-panel panel">
+              <h3>Cesta básica</h3>
+              <ul class="link-list">
+                <li><a href="https://www.dieese.org.br/analisecestabasica/2026/202609cestabasica.pdf" target="_blank" rel="noopener noreferrer">Conab/DIEESE: Pesquisa Nacional da Cesta Básica, setembro de 2026 (PDF)</a></li>
+                <li><a href="https://www.dieese.org.br/cesta/" target="_blank" rel="noopener noreferrer">DIEESE: banco de dados da cesta (preço médio e gasto mensal de cada item)</a></li>
+                <li><a href="https://www.dieese.org.br/metodologia/metodologiaCestaBasica2016.pdf" target="_blank" rel="noopener noreferrer">DIEESE: metodologia, com a tabela do Decreto-Lei 399 de 1938 (PDF)</a></li>
+              </ul>
+            </section>
+            <section class="glass-panel panel">
+              <h3>Imóveis</h3>
+              <ul class="link-list">
+                <li><a href="https://www.fipe.org.br/pt-br/indices/fipezap/" target="_blank" rel="noopener noreferrer">Fipe: página do Índice FipeZAP</a></li>
+                <li><a href="https://downloads.fipe.org.br/indices/fipezap/fipezap-serieshistoricas.xlsx" target="_blank" rel="noopener noreferrer">FipeZAP: planilha de séries históricas (56 cidades)</a></li>
+                <li><a href="https://downloads.fipe.org.br/indices/fipezap/fipezap-202609-residencial-venda-publico.pdf" target="_blank" rel="noopener noreferrer">FipeZAP: informe de venda residencial, setembro de 2026 (PDF)</a></li>
+                <li><a href="https://downloads.fipe.org.br/indices/fipezap/fipezap-202609-residencial-locacao.pdf" target="_blank" rel="noopener noreferrer">FipeZAP: informe de locação residencial, setembro de 2026 (PDF)</a></li>
+                <li><a href="https://downloads.fipe.org.br/indices/fipezap/fipezap-202609-comercial.pdf" target="_blank" rel="noopener noreferrer">FipeZAP: informe comercial, setembro de 2026 (PDF)</a></li>
+              </ul>
+            </section>
+            <section class="glass-panel panel">
+              <h3>Nomes e regiões</h3>
+              <ul class="link-list">
+                <li><a href="https://servicodados.ibge.gov.br/api/docs/localidades" target="_blank" rel="noopener noreferrer">IBGE: API de Localidades (estados, municípios e regiões geográficas)</a></li>
+              </ul>
+            </section>
+            <section class="glass-panel panel">
+              <h3>Pesquisa local</h3>
+              <ul class="link-list">
+                <li><a href="https://www.correiodamanha.com.br/nacional/sao-paulo/campinas/2026/10/328069-cesta-basica-sobe-287-em-agosto-e-atinge-rs-83299-em-campinas.html" target="_blank" rel="noopener noreferrer">Correio da Manhã: cesta de Campinas em agosto de 2026 (Observatório PUC-Campinas)</a></li>
+              </ul>
+              <p class="panel-sub">Fonte de imprensa, de outro mês e outra coleta. Aparece só como referência.</p>
+            </section>
+          </div>
+          <section class="glass-panel panel">
+            <h3>Como cada número é calculado</h3>
+            <dl class="method-list">
+              <dt>Valor da cesta</dt><dd>Soma de quantidade × preço médio dos 13 itens (12 no Norte e no Nordeste). As quantidades vêm do Decreto-Lei 399 e variam em três regiões. O app mostra o total publicado; a conta difere dele só por arredondamento.</dd>
+              <dt>% do salário mínimo líquido</dt><dd>Cesta ÷ (R$ 1.621,00 × 0,925), descontados 7,5% da Previdência.</dd>
+              <dt>Tempo de trabalho</dt><dd>Cesta ÷ R$ 1.621,00 × 220 horas por mês.</dd>
+              <dt>Salário mínimo necessário</dt><dd>Cesta mais cara × 3 ÷ 0,3571. Uma família de quatro pessoas consome como três adultos, e a alimentação pesa 35,71% do orçamento.</dd>
+              <dt>Compra e aluguel estimados</dt><dd>Preço médio por m² × área informada.</dd>
+              <dt>Anos de aluguel</dt><dd>Preço de compra ÷ aluguel de 12 meses.</dd>
+              <dt>Rentabilidade</dt><dd>Taxa anual publicada pelo FipeZAP, antes de impostos e custos.</dd>
+            </dl>
+          </section>
+          <section class="glass-panel panel">
+            <h3>Limites dos dados</h3>
+            <ul class="plain-list">
+              <li>O FipeZAP mede preços de anúncios, não de negócios fechados. Os valores são médias móveis de três meses.</li>
+              <li>O FipeZAP Comercial cobre salas e conjuntos de até 200 m², em 10 cidades. Lojas e galpões ficam de fora.</li>
+              <li>O FipeZAP Residencial de locação não cobre 20 das 56 cidades.</li>
+              <li>Preço de terreno saiu do app: nenhuma fonte pública comparável por cidade foi encontrada.</li>
+              <li>Feijão e farinha mudam de tipo entre regiões, por isso são comparados separadamente.</li>
+            </ul>
+          </section>
+          <section class="glass-panel panel">
+            <h3>Prova de origem (SHA-256)</h3>
+            <p class="panel-sub">Baixe o arquivo na fonte e compare a impressão digital. Uma diferença pode indicar apenas que a fonte republicou o arquivo.</p>
+            <div class="table-wrap"><table class="data-table" id="hashTable"></table></div>
+          </section>
+        </div>
+      </main>
+
+      <footer class="app-footer">
+        <div class="content-wrapper footer-text">
+          <p>Dados: Conab/DIEESE, Índice FipeZAP e IBGE, referência <span data-bind="period"></span>. <a href="#" id="footerSources">Ver fontes e método</a>.</p>
+          <p>Desenvolvedor: Systekna · nov/2026</p>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <nav class="app-bottom-nav" id="appBottomNav" aria-label="Navegação principal">
+    <button type="button" class="bottom-nav-item active" data-tab="tabPanorama" aria-current="page"><span><span data-stk-icon="layout"></span></span><span class="bottom-nav-label">Panorama</span></button>
+    <button type="button" class="bottom-nav-item" data-tab="tabCapitais"><span><span data-stk-icon="basket"></span></span><span class="bottom-nav-label">Cesta</span></button>
+    <button type="button" class="bottom-nav-item" data-tab="tabMunicipios"><span><span data-stk-icon="mapPin"></span></span><span class="bottom-nav-label">SP</span></button>
+    <button type="button" class="bottom-nav-item" data-tab="tabImoveis"><span><span data-stk-icon="building"></span></span><span class="bottom-nav-label">Imóveis</span></button>
+    <button type="button" class="bottom-nav-item" data-tab="tabFontes"><span><span data-stk-icon="book"></span></span><span class="bottom-nav-label">Fontes</span></button>
+  </nav>
+
+  <div class="stk-toast" id="appToast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="src/Program.js?v=20261104-1639"></script>
+</body>
+</html>

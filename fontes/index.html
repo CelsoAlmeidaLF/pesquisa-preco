@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Comparativo: Insumos & Imóveis - Brasil & SP</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.8);
+        }
+
+        .table-container {
+            max-height: 520px;
+        }
+
+        .highlight-min {
+            background-color: rgba(16, 185, 129, 0.15) !important;
+            color: #10b981 !important;
+            font-weight: 600;
+        }
+
+        .highlight-max {
+            background-color: rgba(239, 68, 68, 0.15) !important;
+            color: #ef4444 !important;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased transition-colors duration-300">
+
+    <!-- Top Navbar -->
+    <header
+        class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50 px-4 lg:px-8 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div
+                class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                <i class="fa-solid fa-chart-line text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                    Monitor de Preços Brasil & SP
+                    <span
+                        class="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">Cesta
+                        Básica & Imóveis</span>
+                </h1>
+                <p class="text-xs text-slate-400 hidden sm:block">Comparativo detalhado de insumos alimentícios e
+                    mercado imobiliário (R$/m²)</p>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-3">
+            <button id="themeToggleBtn"
+                class="p-2 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 transition-all text-sm flex items-center gap-1.5"
+                title="Alternar Modo Claro / Escuro">
+                <i id="themeIcon" class="fa-solid fa-moon"></i>
+                <span class="text-xs hidden md:inline">Tema</span>
+            </button>
+            <button onclick="exportTableToCSV()"
+                class="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs flex items-center gap-2 shadow-sm transition">
+                <i class="fa-solid fa-file-csv"></i>
+                <span>Exportar CSV</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 lg:px-8 py-6 space-y-6">
+
+        <!-- KPI Summary Row -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- KPI 1 -->
+            <div class="p-4 rounded-xl border border-slate-800 bg-slate-950/50 hover:border-slate-700 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-1">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Menor Cesta Básica (BR)</span>
+                    <span class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs"><i
+                            class="fa-solid fa-arrow-down"></i> -21.2%</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-extrabold text-emerald-400">R$ 562,88</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-location-dot text-slate-500"></i>
+                    <span><strong>Aracaju (SE)</strong> &bull; Menor custo nacional</span>
+                </div>
+            </div>
+
+            <!-- KPI 2 -->
+            <div class="p-4 rounded-xl border border-slate-800 bg-slate-950/50 hover:border-slate-700 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-1">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Maior Cesta Básica (BR)</span>
+                    <span class="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 text-xs"><i
+                            class="fa-solid fa-arrow-up"></i> +26.8%</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-extrabold text-rose-400">R$ 906,14</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-location-dot text-slate-500"></i>
+                    <span><strong>São Paulo (SP)</strong> &bull; Maior custo apurado</span>
+                </div>
+            </div>
+
+            <!-- KPI 3 -->
+            <div class="p-4 rounded-xl border border-slate-800 bg-slate-950/50 hover:border-slate-700 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-1">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Aluguel Médio (SP Capital)</span>
+                    <span class="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 text-xs"><i
+                            class="fa-solid fa-building"></i> m²/mês</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-extrabold text-blue-400">R$ 64,98</span>
+                    <span class="text-xs text-slate-500">/ m²</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-tag text-slate-500"></i>
+                    <span>Comercial médio: <strong>R$ 72,50/m²</strong></span>
+                </div>
+            </div>
+
+            <!-- KPI 4 -->
+            <div class="p-4 rounded-xl border border-slate-800 bg-slate-950/50 hover:border-slate-700 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-1">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Terreno Médio Urbano</span>
+                    <span class="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 text-xs"><i
+                            class="fa-solid fa-map"></i> m² Venda</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-extrabold text-purple-400">R$ 4.800</span>
+                    <span class="text-xs text-slate-500">/ m²</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved text-slate-500"></i>
+                    <span>Condomínio fechado: <strong>R$ 7.500/m²</strong></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <div class="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-2">
+            <button onclick="switchTab('destaques')" id="tab-destaques"
+                class="tab-btn active px-4 py-2 rounded-lg text-sm font-semibold transition bg-blue-600 text-white flex items-center gap-2">
+                <i class="fa-solid fa-star text-amber-300"></i>
+                <span>Destaques & Menores Preços</span>
+            </button>
+            <button onclick="switchTab('estados')" id="tab-estados"
+                class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-earth-americas"></i>
+                <span>Estados do Brasil (27 UFs)</span>
+            </button>
+            <button onclick="switchTab('municipios')" id="tab-municipios"
+                class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-city"></i>
+                <span>Municípios de São Paulo</span>
+            </button>
+            <button onclick="switchTab('imoveis')" id="tab-imoveis"
+                class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-house-chimney"></i>
+                <span>Mercado Imobiliário (m²)</span>
+            </button>
+        </div>
+
+        <!-- TAB 1: Destaques & Menores Preços -->
+        <section id="content-destaques" class="tab-content space-y-6">
+            <!-- Overview & Chart Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Visual Comparison Chart -->
+                <div
+                    class="lg:col-span-2 p-5 rounded-xl border border-slate-800 bg-slate-950/60 shadow-sm flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-bold text-white text-base">Menor Preço vs Média Nacional por Insumo</h3>
+                            <p class="text-xs text-slate-400">Economia percentual nos municípios líderes de preço baixo
+                            </p>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 rounded bg-slate-800 text-slate-300">Valores em R$</span>
+                    </div>
+                    <div class="relative flex-1 min-h-[300px]">
+                        <canvas id="chartDestaques"></canvas>
+                    </div>
+                </div>
+
+                <!-- Best Deal Cards -->
+                <div class="space-y-3 flex flex-col justify-between">
+                    <div class="p-4 rounded-xl border border-emerald-900/40 bg-emerald-950/20 flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-bowl-rice"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-emerald-400 font-semibold uppercase">Arroz Mais Barato</div>
+                            <div class="text-xl font-bold text-white">R$ 4,39 <span
+                                    class="text-xs font-normal text-slate-400">/ kg</span></div>
+                            <div class="text-xs text-slate-400">Pelotas / Porto Alegre (RS)</div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-xl border border-blue-900/40 bg-blue-950/20 flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-seedling"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-blue-400 font-semibold uppercase">Feijão Carioca</div>
+                            <div class="text-xl font-bold text-white">R$ 5,95 <span
+                                    class="text-xs font-normal text-slate-400">/ kg</span></div>
+                            <div class="text-xs text-slate-400">Aracaju (SE) / Salvador (BA)</div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-xl border border-amber-900/40 bg-amber-950/20 flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-mug-hot"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-amber-400 font-semibold uppercase">Café Torrado</div>
+                            <div class="text-xl font-bold text-white">R$ 14,80 <span
+                                    class="text-xs font-normal text-slate-400">/ 500g</span></div>
+                            <div class="text-xs text-slate-400">Belo Horizonte / Sul de Minas (MG)</div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-xl border border-rose-900/40 bg-rose-950/20 flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-drumstick-bite"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-rose-400 font-semibold uppercase">Carne Bovina (Alcatra)</div>
+                            <div class="text-xl font-bold text-white">R$ 32,50 <span
+                                    class="text-xs font-normal text-slate-400">/ kg</span></div>
+                            <div class="text-xs text-slate-400">Cuiabá (MT) / Campo Grande (MS)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Highlights Table -->
+            <div class="p-5 rounded-xl border border-slate-800 bg-slate-950/60 shadow-sm">
+                <h3 class="font-bold text-white text-base mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-400"></i>
+                    Ranking de Menores Preços Registrados no Brasil
+                </h3>
+                <div class="overflow-x-auto rounded-lg border border-slate-800">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead
+                            class="bg-slate-900/90 text-slate-400 uppercase font-semibold text-xs border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">Insumo</th>
+                                <th class="p-3">Unidade</th>
+                                <th class="p-3 text-emerald-400">Menor Preço</th>
+                                <th class="p-3">Município / Estado Líder</th>
+                                <th class="p-3">Média Brasil</th>
+                                <th class="p-3">Diferença vs Média</th>
+                                <th class="p-3">Fator Econômico Regional</th>
+                            </tr>
+                        </thead>
+                        <tbody id="destaquesTableBody" class="divide-y divide-slate-800/60">
+                            <!-- Rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: Estados do Brasil -->
+        <section id="content-estados" class="tab-content hidden space-y-6">
+            <!-- Controls -->
+            <div
+                class="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-slate-950/50 p-4 rounded-xl border border-slate-800">
+                <div class="relative flex-1 max-w-md">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+                    <input type="text" id="searchEstados" onkeyup="filterEstadosTable()"
+                        placeholder="Buscar estado ou capital..."
+                        class="w-full bg-slate-900 border border-slate-700/80 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <label class="text-xs text-slate-400">Ordenar por:</label>
+                    <select id="sortEstadosSelect" onchange="sortEstadosTable()"
+                        class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500">
+                        <option value="cesta-asc">Cesta Básica (Menor para Maior)</option>
+                        <option value="cesta-desc">Cesta Básica (Maior para Menor)</option>
+                        <option value="arroz-asc">Arroz (Menor Preço)</option>
+                        <option value="feijao-asc">Feijão (Menor Preço)</option>
+                        <option value="carne-asc">Carne (Menor Preço)</option>
+                        <option value="nome-asc">Nome do Estado (A-Z)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Chart for States -->
+            <div class="p-5 rounded-xl border border-slate-800 bg-slate-950/60">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                        <h3 class="font-bold text-white text-base">Custo Total da Cesta Básica por Capital (R$)</h3>
+                        <p class="text-xs text-slate-400">Valores mensais padronizados pelas metodologias DIEESE /
+                            Procon</p>
+                    </div>
+                    <span class="text-xs px-2.5 py-1 rounded bg-slate-800 text-slate-300">Todas as 27 UFs</span>
+                </div>
+                <div class="relative min-h-[340px]">
+                    <canvas id="chartEstados"></canvas>
+                </div>
+            </div>
+
+            <!-- States Table -->
+            <div class="p-5 rounded-xl border border-slate-800 bg-slate-950/60">
+                <h3 class="font-bold text-white text-base mb-3">Tabela Comparativa de Alimentos por Estado (Capitais)
+                </h3>
+                <div class="overflow-x-auto rounded-lg border border-slate-800 table-container">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead
+                            class="bg-slate-900 sticky top-0 text-slate-400 uppercase font-semibold text-xs border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">Região</th>
+                                <th class="p-3">Estado (UF)</th>
+                                <th class="p-3">Capital</th>
+                                <th class="p-3">Arroz (kg)</th>
+                                <th class="p-3">Feijão (kg)</th>
+                                <th class="p-3">Café (500g)</th>
+                                <th class="p-3">Carne (kg)</th>
+                                <th class="p-3">Pão (kg)</th>
+                                <th class="p-3">Leite (L)</th>
+                                <th class="p-3 text-right">Cesta Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="estadosTableBody" class="divide-y divide-slate-800/60">
+                            <!-- Rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: Municípios de São Paulo -->
+        <section id="content-municipios" class="tab-content hidden space-y-6">
+            <!-- Search & Filters -->
+            <div
+                class="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-slate-950/50 p-4 rounded-xl border border-slate-800">
+                <div class="relative flex-1 max-w-md">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+                    <input type="text" id="searchMunicipios" onkeyup="filterMunicipiosTable()"
+                        placeholder="Buscar município paulista ou região..."
+                        class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none">
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <label class="text-xs text-slate-400">Filtrar Região:</label>
+                    <select id="filterRegiaoSP" onchange="filterMunicipiosTable()"
+                        class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none">
+                        <option value="ALL">Todas as Regiões</option>
+                        <option value="Grande SP">Grande SP / ABCD</option>
+                        <option value="Campinas">Região de Campinas</option>
+                        <option value="Vale do Paraíba">Vale do Paraíba</option>
+                        <option value="Baixada Santista">Baixada Santista</option>
+                        <option value="Ribeirão Preto">Ribeirão Preto / Central</option>
+                        <option value="Interior / Oeste">Interior / Oeste / Vale do Ribeira</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Chart SP -->
+            <div class="p-5 rounded-xl border border-slate-800 bg-slate-950/60">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="font-bold text-white text-base">Variação de Preços nos Municípios Paulistas</h3>
+                        <p class="text-xs text-slate-400">Comparação por cesta e principais insumos entre cidades de
+                            destaque</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="spChartMetricSelect" onchange="updateSPChart()"
+                            class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-300">
+                            <option value="cesta">Cesta Básica Total (R$)</option>
+                            <option value="carne">Carne Bovina (R$/kg)</option>
+                            <option value="arroz">Arroz (R$/kg)</option>
+                            <option value="feijao">Feijão (R$/kg)</option>
+                            <option value="cafe">Café (R$/500g)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="relative min-h-[340px]">
+                    <canvas id="chartMunicipios"></canvas>
+                </div>
+            </div>
+
+            <!-- SP Table -->
+            <div class="p-5 rounded-xl border border-slate-800 bg-slate-950/60">
+                <h3 class="font-bold text-white text-base mb-3">Tabela de Preços em Municípios de São Paulo</h3>
+                <div class="overflow-x-auto rounded-lg border border-slate-800 table-container">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead
+                            class="bg-slate-900 sticky top-0 text-slate-400 uppercase font-semibold text-xs border-b border-slate-800">
+                            <tr>
+                                <th class="p-3 cursor-pointer" onclick="sortTableSP('regiao')">Região Administrativa <i
+                                        class="fa-solid fa-sort text-[10px] ml-1"></i></th>
+                                <th class="p-3 cursor-pointer" onclick="sortTableSP('cidade')">Município <i
+                                        class="fa-solid fa-sort text-[10px] ml-1"></i></th>
+                                <th class="p-3 cursor-pointer" onclick="sortTableSP('arroz')">Arroz (kg) <i
+                                        class="fa-solid fa-sort text-[10px] ml-1"></i></th>
+                                <th class="p-3 cursor-pointer" onclick="sortTableSP('feijao')">Feijão (kg) <i
+                                        class="fa-solid fa-sort text-[10px] ml-1"></i></th>
+                                <th class="p-3 cursor-pointer" onclick="sortTableSP('cafe')">Café (500g) <i
+                                        class="fa-solid fa-sort text-[10px] ml-1"></i></th>
+                                <th class="p-3 cursor-pointer" onclick="sortTableSP('carne')">Carne (kg) <i
+                                        class="fa-solid fa-sort text-[10px] ml-1"></i></th>
+                                <th class="p-3 cursor-pointer" onclick="sortTableSP('pao')">Pão (kg) <i
+                                        class="fa-solid fa-sort text-[10px] ml-1"></i></th>
+                                <th class="p-3 cursor-pointer" onclick="sortTableSP('leite')">Leite (L) <i
+                                        class="fa-solid fa-sort text-[10px] ml-1"></i></th>
+                                <th class="p-3 text-right cursor-pointer" onclick="sortTableSP('cesta')">Cesta Total
+                                    (R$) <i class="fa-solid fa-sort text-[10px] ml-1"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="spTableBody" class="divide-y divide-slate-800/60">
+                            <!-- Rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: Mercado Imobiliário -->
+        <section id="content-imoveis" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 1: Aluguel -->
+                <div class="p-5 rounded-xl border border-slate-800 bg-slate-950/60">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-bold text-white text-base">Aluguel Médio Mensal (R$/m²)</h3>
+                            <p class="text-xs text-slate-400">Residencial vs. Comercial por cidade e polo regional</p>
+                        </div>
+                        <i class="fa-solid fa-key text-blue-400"></i>
+                    </div>
+                    <div class="relative min-h-[300px]">
+                        <canvas id="chartAluguel"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Terreno -->
+                <div class="p-5 rounded-xl border border-slate-800 bg-slate-950/60">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-bold text-white text-base">Preço de Venda do Terreno (R$/m²)</h3>
+                            <p class="text-xs text-slate-400">Lote Urbano Comum vs. Lote em Condomínio Fechado</p>
+                        </div>
+                        <i class="fa-solid fa-vector-square text-purple-400"></i>
+                    </div>
+                    <div class="relative min-h-[300px]">
+                        <canvas id="chartTerreno"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real Estate Table -->
+            <div class="p-5 rounded-xl border border-slate-800 bg-slate-950/60">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="font-bold text-white text-base">Valores de Terrenos e Locação por Cidade / Região
+                        </h3>
+                        <p class="text-xs text-slate-400">Referência apurada via FipeZAP, Secovi e pesquisas regionais
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="searchImoveis" onkeyup="filterImoveisTable()"
+                            placeholder="Buscar praça ou região..."
+                            class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-lg border border-slate-800">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead
+                            class="bg-slate-900 text-slate-400 uppercase font-semibold text-xs border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">Cidade / Polo</th>
+                                <th class="p-3">Perfil de Mercado</th>
+                                <th class="p-3">Aluguel Residencial (R$/m²)</th>
+                                <th class="p-3">Aluguel Comercial (R$/m²)</th>
+                                <th class="p-3">Terreno Urbano (R$/m²)</th>
+                                <th class="p-3">Terreno Condomínio (R$/m²)</th>
+                                <th class="p-3">Tendência 12m</th>
+                            </tr>
+                        </thead>
+                        <tbody id="imoveisTableBody" class="divide-y divide-slate-800/60">
+                            <!-- Rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-slate-950/40 text-slate-500 py-6 text-center text-xs">
+        <p>Painel Analítico de Preços & Indicadores Imobiliários &bull; Dados compilados com base em DIEESE, Procon-SP,
+            IBGE e FipeZAP.</p>
+    </footer>
+
+    <!-- Notification Toast -->
+    <div id="toast"
+        class="fixed bottom-5 right-5 z-50 bg-blue-600 text-white text-xs px-4 py-2.5 rounded-lg shadow-xl hidden transition-all flex items-center gap-2">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toastMessage">Operação realizada com sucesso!</span>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. DATASETS (Fidedignos à Planilha e Pesquisas)
+           ========================================================================== */
+
+        const DESTAQUES_DATA = [
+            { item: "Arroz Agulhinha", un: "kg", menor: 4.39, local: "Pelotas / Porto Alegre (RS)", mediaBr: 5.92, diff: -25.8, motivo: "Maior polo produtor de arroz irrigado do Brasil (Planície Gaúcha)" },
+            { item: "Feijão Carioca", un: "kg", menor: 5.95, local: "Aracaju (SE) / Salvador (BA)", mediaBr: 7.84, diff: -24.1, motivo: "Cadeia de abastecimento local e menor tributação ICMS" },
+            { item: "Café Torrado", un: "500g", menor: 14.80, local: "Belo Horizonte / Sul de Minas (MG)", mediaBr: 20.45, diff: -27.6, motivo: "Maior produtor e beneficiador de café arábica do país" },
+            { item: "Carne Bovina (Alcatra)", un: "kg", menor: 32.50, local: "Cuiabá (MT) / Campo Grande (MS)", mediaBr: 44.80, diff: -27.5, motivo: "Maior rebanho bovino nacional e proximidade dos frigoríficos" },
+            { item: "Pão Francês", un: "kg", menor: 12.90, local: "Fortaleza (CE) / João Pessoa (PB)", mediaBr: 17.60, diff: -26.7, motivo: "Forte polo moageiro nos portos de Mucuripe e Suape" },
+            { item: "Leite Pasteurizado", un: "L", menor: 4.15, local: "Chapecó (SC) / Bacia Leiteira (PR)", mediaBr: 5.65, diff: -26.5, motivo: "Oeste Catarinense e Sudoeste do PR líderes em captação leiteira" },
+            { item: "Óleo de Soja", un: "900ml", menor: 5.49, local: "Goiânia (GO) / Rondonópolis (MT)", mediaBr: 6.89, diff: -20.3, motivo: "Processamento direto no cinturão do Centro-Oeste" },
+            { item: "Açúcar Refinado", un: "kg", menor: 3.40, local: "Ribeirão Preto / Sertãozinho (SP)", mediaBr: 4.65, diff: -26.9, motivo: "Maior pólo sucroalcooleiro do Hemisfério Sul" },
+            { item: "Tomate Longa Vida", un: "kg", menor: 4.50, local: "Cristalina (GO) / Piedade (SP)", mediaBr: 8.20, diff: -45.1, motivo: "Venda direta da bacia olerícola regional" },
+            { item: "Cesta Básica Completa", un: "Mensal", menor: 562.88, local: "Aracaju (SE) [Nacional]", mediaBr: 714.30, diff: -21.2, motivo: "Menor conjunto ponderado de alimentação básica do país" }
+        ];
+
+        const ESTADOS_DATA = [
+            { reg: "Nordeste", uf: "SE", estado: "Sergipe", capital: "Aracaju", arroz: 5.10, feijao: 5.95, cafe: 17.50, carne: 36.50, pao: 13.80, leite: 4.70, cesta: 562.88 },
+            { reg: "Nordeste", uf: "PB", estado: "Paraíba", capital: "João Pessoa", arroz: 5.25, feijao: 6.10, cafe: 17.80, carne: 37.00, pao: 13.50, leite: 4.80, cesta: 574.50 },
+            { reg: "Nordeste", uf: "AL", estado: "Alagoas", capital: "Maceió", arroz: 5.30, feijao: 6.20, cafe: 18.00, carne: 37.80, pao: 14.10, leite: 4.85, cesta: 585.10 },
+            { reg: "Nordeste", uf: "PE", estado: "Pernambuco", capital: "Recife", arroz: 5.35, feijao: 6.30, cafe: 18.20, carne: 38.50, pao: 13.90, leite: 4.90, cesta: 598.40 },
+            { reg: "Nordeste", uf: "RN", estado: "Rio Grande do Norte", capital: "Natal", arroz: 5.40, feijao: 6.40, cafe: 18.40, carne: 39.00, pao: 14.20, leite: 5.00, cesta: 604.20 },
+            { reg: "Nordeste", uf: "BA", estado: "Bahia", capital: "Salvador", arroz: 5.45, feijao: 6.00, cafe: 18.10, carne: 39.50, pao: 14.50, leite: 5.10, cesta: 615.80 },
+            { reg: "Nordeste", uf: "CE", estado: "Ceará", capital: "Fortaleza", arroz: 5.50, feijao: 6.50, cafe: 18.50, carne: 40.00, pao: 12.90, leite: 5.15, cesta: 622.30 },
+            { reg: "Nordeste", uf: "PI", estado: "Piauí", capital: "Teresina", arroz: 5.60, feijao: 6.60, cafe: 18.80, carne: 40.50, pao: 14.80, leite: 5.20, cesta: 628.90 },
+            { reg: "Nordeste", uf: "MA", estado: "Maranhão", capital: "São Luís", arroz: 5.65, feijao: 6.70, cafe: 19.00, carne: 41.00, pao: 15.00, leite: 5.25, cesta: 635.40 },
+            { reg: "Norte", uf: "TO", estado: "Tocantins", capital: "Palmas", arroz: 5.50, feijao: 6.90, cafe: 19.20, carne: 36.80, pao: 15.50, leite: 5.30, cesta: 645.00 },
+            { reg: "Centro-Oeste", uf: "GO", estado: "Goiás", capital: "Goiânia", arroz: 5.60, feijao: 6.80, cafe: 18.90, carne: 34.50, pao: 16.20, leite: 5.10, cesta: 654.20 },
+            { reg: "Centro-Oeste", uf: "MT", estado: "Mato Grosso", capital: "Cuiabá", arroz: 5.70, feijao: 7.10, cafe: 19.50, carne: 32.50, pao: 16.80, leite: 5.35, cesta: 662.10 },
+            { reg: "Centro-Oeste", uf: "MS", estado: "Mato Grosso do Sul", capital: "Campo Grande", arroz: 5.75, feijao: 7.20, cafe: 19.80, carne: 33.20, pao: 16.50, leite: 5.25, cesta: 671.50 },
+            { reg: "Sudeste", uf: "MG", estado: "Minas Gerais", capital: "Belo Horizonte", arroz: 5.80, feijao: 7.40, cafe: 14.80, carne: 42.00, pao: 16.90, leite: 4.95, cesta: 689.70 },
+            { reg: "Sudeste", uf: "ES", estado: "Espírito Santo", capital: "Vitória", arroz: 5.85, feijao: 7.50, cafe: 16.50, carne: 43.00, pao: 17.20, leite: 5.40, cesta: 712.40 },
+            { reg: "Norte", uf: "PA", estado: "Pará", capital: "Belém", arroz: 6.10, feijao: 7.90, cafe: 20.50, carne: 42.50, pao: 17.80, leite: 5.80, cesta: 724.80 },
+            { reg: "Norte", uf: "RO", estado: "Rondônia", capital: "Porto Velho", arroz: 5.95, feijao: 7.60, cafe: 20.20, carne: 35.80, pao: 17.50, leite: 5.60, cesta: 730.00 },
+            { reg: "Centro-Oeste", uf: "DF", estado: "Distrito Federal", capital: "Brasília", arroz: 6.20, feijao: 7.80, cafe: 20.80, carne: 45.00, pao: 18.50, leite: 5.60, cesta: 752.60 },
+            { reg: "Norte", uf: "AC", estado: "Acre", capital: "Rio Branco", arroz: 6.30, feijao: 8.20, cafe: 21.50, carne: 43.00, pao: 18.20, leite: 6.10, cesta: 765.20 },
+            { reg: "Norte", uf: "AM", estado: "Amazonas", capital: "Manaus", arroz: 6.40, feijao: 8.50, cafe: 22.00, carne: 44.50, pao: 18.80, leite: 6.30, cesta: 778.50 },
+            { reg: "Norte", uf: "AP", estado: "Amapá", capital: "Macapá", arroz: 6.45, feijao: 8.60, cafe: 22.10, carne: 44.00, pao: 18.90, leite: 6.40, cesta: 785.00 },
+            { reg: "Norte", uf: "RR", estado: "Roraima", capital: "Boa Vista", arroz: 6.60, feijao: 8.80, cafe: 22.80, carne: 45.20, pao: 19.20, leite: 6.60, cesta: 802.40 },
+            { reg: "Sul", uf: "PR", estado: "Paraná", capital: "Curitiba", arroz: 5.30, feijao: 7.30, cafe: 20.10, carne: 44.80, pao: 17.60, leite: 4.40, cesta: 795.30 },
+            { reg: "Sul", uf: "RS", estado: "Rio Grande do Sul", capital: "Porto Alegre", arroz: 4.39, feijao: 7.45, cafe: 21.00, carne: 46.50, pao: 18.10, leite: 4.70, cesta: 815.90 },
+            { reg: "Sul", uf: "SC", estado: "Santa Catarina", capital: "Florianópolis", arroz: 5.45, feijao: 7.60, cafe: 21.40, carne: 48.00, pao: 18.90, leite: 4.25, cesta: 832.40 },
+            { reg: "Sudeste", uf: "RJ", estado: "Rio de Janeiro", capital: "Rio de Janeiro", arroz: 6.25, feijao: 8.40, cafe: 21.80, carne: 49.50, pao: 19.50, leite: 5.85, cesta: 865.10 },
+            { reg: "Sudeste", uf: "SP", estado: "São Paulo", capital: "São Paulo", arroz: 6.45, feijao: 8.65, cafe: 22.40, carne: 51.80, pao: 19.80, leite: 5.90, cesta: 906.14 }
+        ];
+
+        const MUNICIPIOS_SP_DATA = [
+            { regiao: "Grande SP", cidade: "São Paulo (Capital)", arroz: 6.45, feijao: 8.65, cafe: 22.40, carne: 51.80, pao: 19.80, leite: 5.90, cesta: 906.14 },
+            { regiao: "Grande SP", cidade: "Santo André", arroz: 6.35, feijao: 8.50, cafe: 21.90, carne: 49.90, pao: 19.20, leite: 5.85, cesta: 885.20 },
+            { regiao: "Grande SP", cidade: "São Bernardo do Campo", arroz: 6.38, feijao: 8.55, cafe: 22.00, carne: 50.10, pao: 19.30, leite: 5.85, cesta: 888.50 },
+            { regiao: "Grande SP", cidade: "São Caetano do Sul", arroz: 6.42, feijao: 8.60, cafe: 22.20, carne: 50.90, pao: 19.60, leite: 5.90, cesta: 898.30 },
+            { regiao: "Grande SP", cidade: "Guarulhos", arroz: 6.30, feijao: 8.40, cafe: 21.80, carne: 49.20, pao: 18.90, leite: 5.80, cesta: 875.00 },
+            { regiao: "Grande SP", cidade: "Osasco", arroz: 6.32, feijao: 8.45, cafe: 21.75, carne: 49.50, pao: 19.00, leite: 5.80, cesta: 878.40 },
+            { regiao: "Grande SP", cidade: "Barueri (Alphaville)", arroz: 6.48, feijao: 8.70, cafe: 22.60, carne: 52.50, pao: 20.50, leite: 5.95, cesta: 918.00 },
+            { regiao: "Baixada Santista", cidade: "Santos", arroz: 6.40, feijao: 8.60, cafe: 22.20, carne: 51.00, pao: 19.50, leite: 5.95, cesta: 895.00 },
+            { regiao: "Baixada Santista", cidade: "Praia Grande", arroz: 6.25, feijao: 8.40, cafe: 21.50, carne: 48.90, pao: 18.80, leite: 5.80, cesta: 868.00 },
+            { regiao: "Campinas", cidade: "Campinas", arroz: 6.20, feijao: 8.30, cafe: 21.20, carne: 48.00, pao: 18.90, leite: 5.75, cesta: 865.30 },
+            { regiao: "Campinas", cidade: "Jundiaí", arroz: 6.25, feijao: 8.35, cafe: 21.40, carne: 48.50, pao: 19.00, leite: 5.80, cesta: 872.10 },
+            { regiao: "Campinas", cidade: "Piracicaba", arroz: 6.05, feijao: 8.10, cafe: 20.60, carne: 46.20, pao: 18.10, leite: 5.60, cesta: 840.40 },
+            { regiao: "Campinas", cidade: "Americana", arroz: 6.10, feijao: 8.20, cafe: 20.80, carne: 46.80, pao: 18.30, leite: 5.65, cesta: 848.00 },
+            { regiao: "Vale do Paraíba", cidade: "São José dos Campos", arroz: 6.22, feijao: 8.35, cafe: 21.40, carne: 48.50, pao: 18.80, leite: 5.78, cesta: 869.20 },
+            { regiao: "Vale do Paraíba", cidade: "Taubaté", arroz: 6.15, feijao: 8.25, cafe: 21.00, carne: 47.30, pao: 18.40, leite: 5.70, cesta: 854.00 },
+            { regiao: "Ribeirão Preto", cidade: "Sorocaba", arroz: 6.10, feijao: 8.15, cafe: 20.90, carne: 46.80, pao: 18.20, leite: 5.65, cesta: 848.00 },
+            { regiao: "Ribeirão Preto", cidade: "Ribeirão Preto", arroz: 5.85, feijao: 7.80, cafe: 19.80, carne: 44.50, pao: 17.50, leite: 5.45, cesta: 822.00 },
+            { regiao: "Ribeirão Preto", cidade: "Franca", arroz: 5.75, feijao: 7.70, cafe: 19.20, carne: 43.80, pao: 17.10, leite: 5.40, cesta: 810.50 },
+            { regiao: "Ribeirão Preto", cidade: "São Carlos", arroz: 5.90, feijao: 7.90, cafe: 20.10, carne: 45.20, pao: 17.80, leite: 5.50, cesta: 830.20 },
+            { regiao: "Ribeirão Preto", cidade: "Araraquara", arroz: 5.88, feijao: 7.85, cafe: 20.00, carne: 44.90, pao: 17.60, leite: 5.48, cesta: 826.00 },
+            { regiao: "Interior / Oeste", cidade: "Bauru", arroz: 5.80, feijao: 7.75, cafe: 19.60, carne: 44.00, pao: 17.40, leite: 5.40, cesta: 816.00 },
+            { regiao: "Interior / Oeste", cidade: "São José do Rio Preto", arroz: 5.70, feijao: 7.60, cafe: 19.40, carne: 43.20, pao: 17.00, leite: 5.35, cesta: 805.00 },
+            { regiao: "Interior / Oeste", cidade: "Marília", arroz: 5.75, feijao: 7.65, cafe: 19.50, carne: 43.50, pao: 17.20, leite: 5.38, cesta: 809.00 },
+            { regiao: "Interior / Oeste", cidade: "Presidente Prudente", arroz: 5.65, feijao: 7.50, cafe: 19.10, carne: 42.00, pao: 16.80, leite: 5.30, cesta: 792.00 },
+            { regiao: "Interior / Oeste", cidade: "Registro (Vale Ribeira)", arroz: 5.50, feijao: 7.35, cafe: 18.70, carne: 40.80, pao: 16.20, leite: 5.15, cesta: 769.50 }
+        ];
+
+        const IMOVEIS_DATA = [
+            { cidade: "São Paulo (Capital)", perfil: "Metrópole Econômica", aluguelRes: 64.98, aluguelCom: 72.50, terrenoUrb: 4800, terrenoCond: 7500, trend: "+6.8%" },
+            { cidade: "Barueri / Alphaville", perfil: "Corporativo & Alto Padrão", aluguelRes: 58.40, aluguelCom: 66.00, terrenoUrb: 4200, terrenoCond: 7100, trend: "+7.4%" },
+            { cidade: "Santos (SP)", perfil: "Litoral / Porto", aluguelRes: 46.20, aluguelCom: 52.00, terrenoUrb: 3100, terrenoCond: 5200, trend: "+5.1%" },
+            { cidade: "Campinas (SP)", perfil: "Polo Tech / Industrial", aluguelRes: 41.50, aluguelCom: 48.00, terrenoUrb: 2500, terrenoCond: 4400, trend: "+6.2%" },
+            { cidade: "Jundiaí (SP)", perfil: "Logística & Qualidade Vida", aluguelRes: 39.80, aluguelCom: 45.00, terrenoUrb: 2300, terrenoCond: 4100, trend: "+6.5%" },
+            { cidade: "São José dos Campos", perfil: "Aeroespacial & Vale", aluguelRes: 37.80, aluguelCom: 43.00, terrenoUrb: 2100, terrenoCond: 3900, trend: "+4.9%" },
+            { cidade: "Sorocaba (SP)", perfil: "Industrial / Interior", aluguelRes: 34.50, aluguelCom: 39.50, terrenoUrb: 1750, terrenoCond: 3200, trend: "+5.5%" },
+            { cidade: "Ribeirão Preto (SP)", perfil: "Agronegócio / Saúde", aluguelRes: 35.00, aluguelCom: 41.00, terrenoUrb: 1850, terrenoCond: 3400, trend: "+5.8%" },
+            { cidade: "São José do Rio Preto", perfil: "Comércio / Serviços", aluguelRes: 28.50, aluguelCom: 33.00, terrenoUrb: 1350, terrenoCond: 2600, trend: "+4.2%" },
+            { cidade: "Presidente Prudente", perfil: "Oeste Paulista", aluguelRes: 22.40, aluguelCom: 27.00, terrenoUrb: 980, terrenoCond: 1850, trend: "+3.8%" },
+            { cidade: "Registro (SP)", perfil: "Vale do Ribeira (Menor SP)", aluguelRes: 19.50, aluguelCom: 24.00, terrenoUrb: 650, terrenoCond: 1300, trend: "+2.9%" },
+            { cidade: "Rio de Janeiro (RJ)", perfil: "Turismo & Capital", aluguelRes: 54.20, aluguelCom: 62.00, terrenoUrb: 3900, terrenoCond: 6200, trend: "+5.4%" },
+            { cidade: "Florianópolis (SC)", perfil: "Litoral / Polo Tech", aluguelRes: 53.60, aluguelCom: 59.00, terrenoUrb: 3600, terrenoCond: 5900, trend: "+8.9%" },
+            { cidade: "Curitiba (PR)", perfil: "Capital Sul", aluguelRes: 42.10, aluguelCom: 49.50, terrenoUrb: 2600, terrenoCond: 4500, trend: "+7.1%" },
+            { cidade: "Belo Horizonte (MG)", perfil: "Capital Sudeste", aluguelRes: 39.50, aluguelCom: 48.00, terrenoUrb: 2400, terrenoCond: 3800, trend: "+6.0%" },
+            { cidade: "Brasília (DF)", perfil: "Poder Público / Federal", aluguelRes: 48.70, aluguelCom: 55.00, terrenoUrb: 3300, terrenoCond: 5400, trend: "+4.5%" },
+            { cidade: "Goiânia (GO)", perfil: "Centro-Oeste / Agro", aluguelRes: 36.20, aluguelCom: 42.00, terrenoUrb: 1950, terrenoCond: 3600, trend: "+7.9%" },
+            { cidade: "Salvador (BA)", perfil: "Nordeste / Litoral", aluguelRes: 33.40, aluguelCom: 40.00, terrenoUrb: 1700, terrenoCond: 3100, trend: "+3.9%" },
+            { cidade: "Fortaleza (CE)", perfil: "Nordeste / Hub Portuário", aluguelRes: 31.80, aluguelCom: 38.50, terrenoUrb: 1650, terrenoCond: 2950, trend: "+4.1%" },
+            { cidade: "Aracaju (SE)", perfil: "Nordeste (Menor Custo)", aluguelRes: 24.80, aluguelCom: 31.00, terrenoUrb: 1200, terrenoCond: 2100, trend: "+3.5%" }
+        ];
+
+        /* ==========================================================================
+           2. TAB SWITCHER LOGIC
+           ========================================================================== */
+
+        let currentActiveTab = 'destaques';
+
+        function switchTab(tabId) {
+            currentActiveTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'active');
+                btn.classList.add('text-slate-400');
+            });
+
+            const activeContent = document.getElementById(`content-${tabId}`);
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeContent) activeContent.classList.remove('hidden');
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('bg-blue-600', 'text-white', 'active');
+            }
+
+            // Redraw charts if needed
+            setTimeout(() => {
+                if (tabId === 'destaques' && window.chartDestaquesRef) window.chartDestaquesRef.resize();
+                if (tabId === 'estados' && window.chartEstadosRef) window.chartEstadosRef.resize();
+                if (tabId === 'municipios' && window.chartMunicipiosRef) window.chartMunicipiosRef.resize();
+                if (tabId === 'imoveis') {
+                    if (window.chartAluguelRef) window.chartAluguelRef.resize();
+                    if (window.chartTerrenoRef) window.chartTerrenoRef.resize();
+                }
+            }, 50);
+        }
+
+        /* ==========================================================================
+           3. RENDERERS & FORMATTERS
+           ========================================================================== */
+
+        const fmtBRL = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
+        function renderDestaquesTable() {
+            const tbody = document.getElementById('destaquesTableBody');
+            tbody.innerHTML = DESTAQUES_DATA.map(item => `
+        <tr class="hover:bg-slate-800/40 transition">
+          <td class="p-3 font-semibold text-white">${item.item}</td>
+          <td class="p-3 text-slate-400">${item.un}</td>
+          <td class="p-3 font-bold text-emerald-400">${fmtBRL(item.menor)}</td>
+          <td class="p-3 font-medium text-slate-200">${item.local}</td>
+          <td class="p-3 text-slate-400">${fmtBRL(item.mediaBr)}</td>
+          <td class="p-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/15 text-emerald-400">
+              ${item.diff}%
+            </span>
+          </td>
+          <td class="p-3 text-xs text-slate-400">${item.motivo}</td>
+        </tr>
+      `).join('');
+        }
+
+        let filteredEstados = [...ESTADOS_DATA];
+        function renderEstadosTable(data = filteredEstados) {
+            const tbody = document.getElementById('estadosTableBody');
+            tbody.innerHTML = data.map(item => {
+                const isMin = item.cesta <= 565;
+                const isMax = item.cesta >= 900;
+                return `
+          <tr class="hover:bg-slate-800/40 transition ${isMin ? 'highlight-min' : ''} ${isMax ? 'highlight-max' : ''}">
+            <td class="p-3 text-slate-400">${item.reg}</td>
+            <td class="p-3 font-semibold text-white">${item.estado} (${item.uf})</td>
+            <td class="p-3 text-slate-300">${item.capital}</td>
+            <td class="p-3">${fmtBRL(item.arroz)}</td>
+            <td class="p-3">${fmtBRL(item.feijao)}</td>
+            <td class="p-3">${fmtBRL(item.cafe)}</td>
+            <td class="p-3">${fmtBRL(item.carne)}</td>
+            <td class="p-3">${fmtBRL(item.pao)}</td>
+            <td class="p-3">${fmtBRL(item.leite)}</td>
+            <td class="p-3 text-right font-bold ${isMin ? 'text-emerald-400' : isMax ? 'text-rose-400' : 'text-blue-400'}">
+              ${fmtBRL(item.cesta)}
+            </td>
+          </tr>
+        `;
+            }).join('');
+        }
+
+        let filteredSP = [...MUNICIPIOS_SP_DATA];
+        let spSortColumn = 'cesta';
+        let spSortAsc = false;
+
+        function renderSPTable(data = filteredSP) {
+            const tbody = document.getElementById('spTableBody');
+            tbody.innerHTML = data.map(item => {
+                const isMin = item.cidade.includes('Registro');
+                const isMax = item.cidade.includes('Capital') || item.cidade.includes('Barueri');
+                return `
+          <tr class="hover:bg-slate-800/40 transition ${isMin ? 'highlight-min' : ''}">
+            <td class="p-3 text-slate-400 font-medium">${item.regiao}</td>
+            <td class="p-3 font-semibold text-white">${item.cidade}</td>
+            <td class="p-3">${fmtBRL(item.arroz)}</td>
+            <td class="p-3">${fmtBRL(item.feijao)}</td>
+            <td class="p-3">${fmtBRL(item.cafe)}</td>
+            <td class="p-3">${fmtBRL(item.carne)}</td>
+            <td class="p-3">${fmtBRL(item.pao)}</td>
+            <td class="p-3">${fmtBRL(item.leite)}</td>
+            <td class="p-3 text-right font-bold ${isMin ? 'text-emerald-400' : isMax ? 'text-rose-400' : 'text-blue-400'}">
+              ${fmtBRL(item.cesta)}
+            </td>
+          </tr>
+        `;
+            }).join('');
+        }
+
+        let filteredImoveis = [...IMOVEIS_DATA];
+        function renderImoveisTable(data = filteredImoveis) {
+            const tbody = document.getElementById('imoveisTableBody');
+            tbody.innerHTML = data.map(item => `
+        <tr class="hover:bg-slate-800/40 transition">
+          <td class="p-3 font-semibold text-white">${item.cidade}</td>
+          <td class="p-3 text-slate-400">${item.perfil}</td>
+          <td class="p-3 font-semibold text-blue-400">${fmtBRL(item.aluguelRes)}/m²</td>
+          <td class="p-3 text-slate-300">${fmtBRL(item.aluguelCom)}/m²</td>
+          <td class="p-3 font-bold text-purple-400">${fmtBRL(item.terrenoUrb)}/m²</td>
+          <td class="p-3 text-slate-300">${fmtBRL(item.terrenoCond)}/m²</td>
+          <td class="p-3 text-emerald-400 font-semibold"><i class="fa-solid fa-arrow-trend-up mr-1 text-[10px]"></i>${item.trend}</td>
+        </tr>
+      `).join('');
+        }
+
+        /* ==========================================================================
+           4. CHARTS CONFIGURATION (Chart.js)
+           ========================================================================== */
+
+        function initCharts() {
+            // 1. Chart Destaques
+            const ctxDestaques = document.getElementById('chartDestaques').getContext('2d');
+            const filteredDestaquesItems = DESTAQUES_DATA.filter(d => d.item !== "Cesta Básica Completa");
+
+            window.chartDestaquesRef = new Chart(ctxDestaques, {
+                type: 'bar',
+                data: {
+                    labels: filteredDestaquesItems.map(d => d.item.split(' ')[0]),
+                    datasets: [
+                        {
+                            label: 'Menor Preço Encontrado (R$)',
+                            data: filteredDestaquesItems.map(d => d.menor),
+                            backgroundColor: '#10b981',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Média Brasil (R$)',
+                            data: filteredDestaquesItems.map(d => d.mediaBr),
+                            backgroundColor: '#475569',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.dataset.label}: ${fmtBRL(ctx.raw)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                        y: {
+                            ticks: { color: '#94a3b8', callback: (v) => 'R$ ' + v },
+                            grid: { color: 'rgba(51, 65, 85, 0.4)' }
+                        }
+                    }
+                }
+            });
+
+            // 2. Chart Estados Cesta Básica
+            const ctxEstados = document.getElementById('chartEstados').getContext('2d');
+            const sortedEstados = [...ESTADOS_DATA].sort((a, b) => a.cesta - b.cesta);
+
+            window.chartEstadosRef = new Chart(ctxEstados, {
+                type: 'bar',
+                data: {
+                    labels: sortedEstados.map(e => `${e.capital} (${e.uf})`),
+                    datasets: [{
+                        label: 'Custo Cesta Básica (R$)',
+                        data: sortedEstados.map(e => e.cesta),
+                        backgroundColor: sortedEstados.map(e => {
+                            if (e.cesta <= 580) return '#10b981'; // Green for lowest
+                            if (e.cesta >= 850) return '#ef4444'; // Red for highest
+                            return '#3b82f6';
+                        }),
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` Cesta Básica: ${fmtBRL(ctx.raw)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#94a3b8', maxRotation: 45, minRotation: 45, font: { size: 10 } },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { color: '#94a3b8', callback: (v) => 'R$ ' + v },
+                            grid: { color: 'rgba(51, 65, 85, 0.4)' }
+                        }
+                    }
+                }
+            });
+
+            // 3. Chart Municípios SP
+            const ctxSP = document.getElementById('chartMunicipios').getContext('2d');
+            const sampleSP = MUNICIPIOS_SP_DATA.slice(0, 14);
+
+            window.chartMunicipiosRef = new Chart(ctxSP, {
+                type: 'bar',
+                data: {
+                    labels: sampleSP.map(m => m.cidade.split(' ')[0]),
+                    datasets: [{
+                        label: 'Custo Cesta Básica (R$)',
+                        data: sampleSP.map(m => m.cesta),
+                        backgroundColor: '#6366f1',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8' } },
+                        tooltip: { callbacks: { label: (ctx) => ` Preço: ${fmtBRL(ctx.raw)}` } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8', callback: (v) => 'R$ ' + v }, grid: { color: 'rgba(51, 65, 85, 0.4)' } }
+                    }
+                }
+            });
+
+            // 4. Chart Aluguel
+            const ctxAluguel = document.getElementById('chartAluguel').getContext('2d');
+            const sampleImoveis = IMOVEIS_DATA.slice(0, 10);
+
+            window.chartAluguelRef = new Chart(ctxAluguel, {
+                type: 'bar',
+                data: {
+                    labels: sampleImoveis.map(i => i.cidade.split(' ')[0]),
+                    datasets: [
+                        {
+                            label: 'Residencial (R$/m²)',
+                            data: sampleImoveis.map(i => i.aluguelRes),
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Comercial (R$/m²)',
+                            data: sampleImoveis.map(i => i.aluguelCom),
+                            backgroundColor: '#0ea5e9',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8' } },
+                        tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${fmtBRL(ctx.raw)}/m²` } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8', callback: (v) => 'R$ ' + v }, grid: { color: 'rgba(51, 65, 85, 0.4)' } }
+                    }
+                }
+            });
+
+            // 5. Chart Terreno
+            const ctxTerreno = document.getElementById('chartTerreno').getContext('2d');
+            window.chartTerrenoRef = new Chart(ctxTerreno, {
+                type: 'bar',
+                data: {
+                    labels: sampleImoveis.map(i => i.cidade.split(' ')[0]),
+                    datasets: [
+                        {
+                            label: 'Terreno Urbano (R$/m²)',
+                            data: sampleImoveis.map(i => i.terrenoUrb),
+                            backgroundColor: '#a855f7',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Lote Condomínio (R$/m²)',
+                            data: sampleImoveis.map(i => i.terrenoCond),
+                            backgroundColor: '#ec4899',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8' } },
+                        tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${fmtBRL(ctx.raw)}/m²` } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8', callback: (v) => 'R$ ' + v }, grid: { color: 'rgba(51, 65, 85, 0.4)' } }
+                    }
+                }
+            });
+        }
+
+        function updateSPChart() {
+            const metric = document.getElementById('spChartMetricSelect').value;
+            const sampleSP = MUNICIPIOS_SP_DATA.slice(0, 14);
+
+            let labelText = 'Custo Total Cesta Básica (R$)';
+            let color = '#6366f1';
+
+            if (metric === 'carne') {
+                labelText = 'Carne Bovina (R$/kg)';
+                color = '#ef4444';
+            } else if (metric === 'arroz') {
+                labelText = 'Arroz Agulhinha (R$/kg)';
+                color = '#10b981';
+            } else if (metric === 'feijao') {
+                labelText = 'Feijão Carioca (R$/kg)';
+                color = '#f59e0b';
+            } else if (metric === 'cafe') {
+                labelText = 'Café Torrado (R$/500g)';
+                color = '#8b5cf6';
+            }
+
+            window.chartMunicipiosRef.data.datasets[0].label = labelText;
+            window.chartMunicipiosRef.data.datasets[0].data = sampleSP.map(m => m[metric]);
+            window.chartMunicipiosRef.data.datasets[0].backgroundColor = color;
+            window.chartMunicipiosRef.update();
+        }
+
+        /* ==========================================================================
+           5. FILTER & SORT IMPLEMENTATION
+           ========================================================================== */
+
+        function filterEstadosTable() {
+            const q = document.getElementById('searchEstados').value.toLowerCase();
+            filteredEstados = ESTADOS_DATA.filter(e =>
+                e.estado.toLowerCase().includes(q) ||
+                e.capital.toLowerCase().includes(q) ||
+                e.uf.toLowerCase().includes(q)
+            );
+            renderEstadosTable(filteredEstados);
+        }
+
+        function sortEstadosTable() {
+            const val = document.getElementById('sortEstadosSelect').value;
+            if (val === 'cesta-asc') filteredEstados.sort((a, b) => a.cesta - b.cesta);
+            else if (val === 'cesta-desc') filteredEstados.sort((a, b) => b.cesta - a.cesta);
+            else if (val === 'arroz-asc') filteredEstados.sort((a, b) => a.arroz - b.arroz);
+            else if (val === 'feijao-asc') filteredEstados.sort((a, b) => a.feijao - b.feijao);
+            else if (val === 'carne-asc') filteredEstados.sort((a, b) => a.carne - b.carne);
+            else if (val === 'nome-asc') filteredEstados.sort((a, b) => a.estado.localeCompare(b.estado));
+            renderEstadosTable(filteredEstados);
+        }
+
+        function filterMunicipiosTable() {
+            const q = document.getElementById('searchMunicipios').value.toLowerCase();
+            const reg = document.getElementById('filterRegiaoSP').value;
+
+            filteredSP = MUNICIPIOS_SP_DATA.filter(m => {
+                const matchesQuery = m.cidade.toLowerCase().includes(q) || m.regiao.toLowerCase().includes(q);
+                const matchesReg = (reg === 'ALL') || (m.regiao === reg);
+                return matchesQuery && matchesReg;
+            });
+
+            renderSPTable(filteredSP);
+        }
+
+        function sortTableSP(col) {
+            if (spSortColumn === col) {
+                spSortAsc = !spSortAsc;
+            } else {
+                spSortColumn = col;
+                spSortAsc = true;
+            }
+
+            filteredSP.sort((a, b) => {
+                if (typeof a[col] === 'string') {
+                    return spSortAsc ? a[col].localeCompare(b[col]) : b[col].localeCompare(a[col]);
+                }
+                return spSortAsc ? a[col] - b[col] : b[col] - a[col];
+            });
+
+            renderSPTable(filteredSP);
+            showToast(`Tabela ordenada por ${col.toUpperCase()} (${spSortAsc ? 'Crescente' : 'Decrescente'})`);
+        }
+
+        function filterImoveisTable() {
+            const q = document.getElementById('searchImoveis').value.toLowerCase();
+            filteredImoveis = IMOVEIS_DATA.filter(i =>
+                i.cidade.toLowerCase().includes(q) ||
+                i.perfil.toLowerCase().includes(q)
+            );
+            renderImoveisTable(filteredImoveis);
+        }
+
+        /* ==========================================================================
+           6. THEME TOGGLE & EXPORT UTILITIES
+           ========================================================================== */
+
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = document.getElementById('themeIcon');
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            if (isDark) {
+                themeIcon.className = "fa-solid fa-moon";
+                document.body.classList.remove('bg-slate-50', 'text-slate-800');
+                document.body.classList.add('bg-slate-900', 'text-slate-100');
+            } else {
+                themeIcon.className = "fa-solid fa-sun text-amber-500";
+                document.body.classList.remove('bg-slate-900', 'text-slate-100');
+                document.body.classList.add('bg-slate-50', 'text-slate-800');
+            }
+            showToast(isDark ? "Modo escuro ativado" : "Modo claro ativado");
+        });
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            toastMsg.innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2500);
+        }
+
+        function exportTableToCSV() {
+            let csv = "data:text/csv;charset=utf-8,";
+            let rows = [];
+
+            if (currentActiveTab === 'estados') {
+                rows.push(["Regiao", "Estado", "UF", "Capital", "Arroz(kg)", "Feijao(kg)", "Cafe(500g)", "Carne(kg)", "Pao(kg)", "Leite(L)", "Cesta(R$)"]);
+                filteredEstados.forEach(e => {
+                    rows.push([e.reg, e.estado, e.uf, e.capital, e.arroz, e.feijao, e.cafe, e.carne, e.pao, e.leite, e.cesta]);
+                });
+            } else if (currentActiveTab === 'municipios') {
+                rows.push(["Regiao", "Municipio", "Arroz(kg)", "Feijao(kg)", "Cafe(500g)", "Carne(kg)", "Pao(kg)", "Leite(L)", "Cesta(R$)"]);
+                filteredSP.forEach(m => {
+                    rows.push([m.regiao, m.cidade, m.arroz, m.feijao, m.cafe, m.carne, m.pao, m.leite, m.cesta]);
+                });
+            } else if (currentActiveTab === 'imoveis') {
+                rows.push(["Cidade", "Perfil", "AluguelRes_m2", "AluguelCom_m2", "TerrenoUrb_m2", "TerrenoCond_m2", "Tendencia"]);
+                filteredImoveis.forEach(i => {
+                    rows.push([i.cidade, i.perfil, i.aluguelRes, i.aluguelCom, i.terrenoUrb, i.terrenoCond, i.trend]);
+                });
+            } else {
+                rows.push(["Insumo", "Unidade", "MenorPreco", "LocalLider", "MediaBrasil", "DiferencaPerc"]);
+                DESTAQUES_DATA.forEach(d => {
+                    rows.push([d.item, d.un, d.menor, d.local, d.mediaBr, d.diff]);
+                });
+            }
+
+            rows.forEach(row => {
+                csv += row.join(",") + "\n";
+            });
+
+            const encodedUri = encodeURI(csv);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `comparativo_${currentActiveTab}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Download do CSV iniciado com sucesso!");
+        }
+
+        /* Initialize on DOM Ready */
+        window.addEventListener('DOMContentLoaded', () => {
+            renderDestaquesTable();
+            renderEstadosTable();
+            renderSPTable();
+            renderImoveisTable();
+            initCharts();
+        });
+    </script>
+</body>
+
+</html>

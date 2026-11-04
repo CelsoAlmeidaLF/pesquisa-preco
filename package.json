@@ -1,0 +1,14 @@
+{
+  "name": "stk-governo-pesquisa-preco",
+  "private": true,
+  "description": "Pesquisa de Preços Brasil (8.6. PESQUISA-PREÇO-BRAZIL): cesta básica e imóveis com fontes, sem dependências npm",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/",
+    "test:ui": "node --experimental-websocket tests/ui_smoke.mjs",
+    "dados": "python3 scripts/build_data.py",
+    "dados:baixar": "python3 scripts/build_data.py --baixar",
+    "versionar": "node scripts/versionar.mjs",
+    "design-system": "node ../_design-system/sync.mjs --verificar"
+  }
+}

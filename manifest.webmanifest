@@ -1,0 +1,14 @@
+{
+  "name": "Pesquisa de Preços Brasil",
+  "short_name": "Preços Brasil",
+  "description": "Cesta básica nas capitais e preços de compra e aluguel de imóveis, com fontes.",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1C1C1C",
+  "theme_color": "#1C1C1C",
+  "icons": [
+    { "src": "icons/app-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/app-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
