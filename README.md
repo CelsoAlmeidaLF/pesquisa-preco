@@ -1,6 +1,6 @@
 # Pesquisa de Preços Brasil (8.6)
 
-**App publicado:** https://celsoalmeidalf.github.io/pesquisa-preco-2026/
+**App publicado:** https://celsoalmeidalf.github.io/pesquisa-preco/
 
 Cesta básica nas 27 capitais e preços de compra e aluguel de imóveis residenciais e comerciais, com fonte para cada número. PWA sem dependências npm, no design system comum dos projetos 8.X.
 
