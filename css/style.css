@@ -30,6 +30,7 @@
 
 .note { display: flex; gap: 10px; margin-top: 16px; padding: 12px 14px; font-size: 0.875rem; color: var(--text-secondary); background: var(--surface-inset); border: 1px solid var(--border-subtle); border-left: 3px solid var(--info); border-radius: var(--radius-md); }
 .note-warn { margin: 0 0 16px; border-left-color: var(--warn); }
+.note > div { display: grid; gap: 8px; min-width: 0; }
 .note .stk-icon { flex: none; width: 18px; height: 18px; }
 
 .toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 4px; }
@@ -49,6 +50,19 @@
 .data-table .num { text-align: right; font-family: var(--mono); white-space: nowrap; }
 .data-table small { display: block; font-family: var(--sans); font-size: 0.6875rem; color: var(--text-secondary); }
 .data-table a { color: var(--accent-blue); }
+/* Selos de origem: "pesquisa do município" x "referência da região" */
+.seal { display: inline-flex; align-items: flex-start; gap: 4px; max-width: 100%; margin-top: 4px; padding: 2px 6px; font-family: var(--sans); font-size: 0.6875rem; font-weight: 600; line-height: 1.25; text-align: left; white-space: normal; border: 1px solid var(--border-default); border-radius: var(--radius-sm); }
+.seal .stk-icon { margin-top: 1px; }
+.seal > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.seal small { display: block; font-weight: 400; color: inherit; opacity: 0.85; }
+.seal-real { color: var(--br-green-text); background: rgba(0, 156, 59, 0.2); border-color: rgba(61, 214, 140, 0.35); }
+.seal-reference { color: var(--br-yellow-text); background: rgba(255, 223, 0, 0.14); border-style: dashed; border-color: rgba(255, 212, 59, 0.4); }
+.cell-stack { display: flex; flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; }
+.cell-stack > .seal { align-self: flex-end; }
+.kv { display: flex; justify-content: space-between; gap: 12px; white-space: nowrap; }
+.kv-key { font-family: var(--sans); font-size: 0.6875rem; color: var(--text-secondary); }
+.pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-top: 12px; }
+.pager-info { flex: 1 1 auto; text-align: center; font-size: 0.8125rem; color: var(--text-secondary); }
 .no-data { font-family: var(--sans); font-size: 0.75rem; color: var(--text-tertiary); }
 .mono { font-family: var(--mono); }
 .hash { font-size: 0.6875rem; overflow-wrap: anywhere; }
@@ -109,4 +123,8 @@
   .data-table small { display: inline; margin-left: 4px; }
   .data-table .empty-row td::before { content: none; }
   .hash { max-width: 60%; }
+  .cell-stack { flex: 1 1 0; }
+  .seal small { display: block; margin-left: 0; }
+  .pager .action-btn { flex: 1 1 40%; justify-content: center; }
+  .pager-info { order: -1; flex-basis: 100%; }
 }

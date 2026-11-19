@@ -2,8 +2,9 @@
  * Application / src/application/PriceMonitorService.js
  * Use cases of the app. Receives the datasets by injection and returns plain view models.
  */
-import { basketCost, basketLines, customPurchasingPower, ITEM_CATALOG, neededMinimumWage, priceRange, wagePercent, workTime } from '../domain/BasketCalculator.js?v=20261104-1703';
-import { COMMERCIAL_MAX_AREA, estimateProperty } from '../domain/RealEstateCalculator.js?v=20261104-1703';
+import { basketCost, basketLines, customPurchasingPower, ITEM_CATALOG, neededMinimumWage, priceRange, wagePercent, workTime } from '../domain/BasketCalculator.js?v=20261119-1136';
+import { KIND, describeBasket, describeEstate } from '../domain/MunicipalityCoverage.js?v=20261119-1136';
+import { COMMERCIAL_MAX_AREA, estimateProperty } from '../domain/RealEstateCalculator.js?v=20261119-1136';
 
 const normalize = text => String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const byName = (a, b, key) => a[key].localeCompare(b[key], 'pt-BR');
@@ -86,12 +87,42 @@ export class PriceMonitorService {
     return { capital, ...customPurchasingPower(capital.publishedTotal, monthlyWage) };
   }
 
+  /**
+   * All municipalities of SP. Each row says whether the value is the municipality's own survey or a regional
+   * reference. The derived figures (share of wage, work time, years of rent) run over whatever value is shown.
+   */
   spMunicipalities({ query = '', region = 'ALL' } = {}) {
     const term = normalize(query);
     return this.municipalities
       .filter(m => (region === 'ALL' || m.intermediateRegion === region)
-        && (!term || normalize(`${m.municipality} ${m.intermediateRegion} ${m.immediateRegion}`).includes(term)))
-      .map(m => ({ ...m, market: this.citiesByCode.get(m.ibgeCode) ?? null }));
+        && (!term || normalize(m.municipality).includes(term)))
+      .map(m => {
+        const basket = describeBasket(m);
+        const residential = describeEstate(m, 'residential', this.citiesByCode);
+        const commercial = describeEstate(m, 'commercial', this.citiesByCode);
+        return {
+          ...m,
+          basketView: basket,
+          wagePercent: wagePercent(basket.value, this.basket.minimumWage),
+          workTime: workTime(basket.value, this.basket.minimumWage),
+          estate: { residential, commercial },
+          yearsOfRent: estimateProperty({ salePerM2: residential.sale, rentPerM2: residential.rent, area: 1 }).yearsOfRent,
+        };
+      });
+  }
+
+  /** How many municipalities have their own value and how many only a regional reference. */
+  spCoverage() {
+    const count = predicate => this.municipalities.filter(predicate).length;
+    return {
+      total: this.municipalities.length,
+      basketReal: count(m => m.basketKind === KIND.REAL),
+      basketReference: count(m => m.basketKind === KIND.REFERENCE),
+      residentialReal: count(m => m.realEstate.residential.kind === KIND.REAL),
+      residentialReference: count(m => m.realEstate.residential.kind === KIND.REFERENCE),
+      commercialReal: count(m => m.realEstate.commercial.kind === KIND.REAL),
+      commercialReference: count(m => m.realEstate.commercial.kind === KIND.REFERENCE),
+    };
   }
 
   spRegions() {

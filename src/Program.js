@@ -1,14 +1,18 @@
 /** Composition root / src/Program.js: wires data, service, view, shell and PWA. */
-import { StkGovShell, renderStkIcons } from '../vendor/stk-gov/stk-gov-shell.js?v=20261104-1703';
-import { StkGovPwa } from '../vendor/stk-gov/stk-gov-pwa.js?v=20261104-1703';
-import { PriceMonitorService } from './application/PriceMonitorService.js?v=20261104-1703';
-import { downloadCsv } from './infrastructure/CsvExporter.js?v=20261104-1703';
-import { BASKET_DATA } from './infrastructure/data/BasketData.js?v=20261104-1703';
-import { REAL_ESTATE_DATA } from './infrastructure/data/RealEstateData.js?v=20261104-1703';
-import { SAO_PAULO_MUNICIPALITIES } from './infrastructure/data/SaoPauloData.js?v=20261104-1703';
-import { SOURCES_DATA } from './infrastructure/data/SourcesData.js?v=20261104-1703';
-import { PriceMonitorView } from './ui/PriceMonitorView.js?v=20261104-1703';
-import { SVG_ICONS } from './ui/SvgIcons.js?v=20261104-1703';
+import { StkGovShell, renderStkIcons } from '../vendor/stk-gov/stk-gov-shell.js?v=20261119-1136';
+import { StkGovPwa } from '../vendor/stk-gov/stk-gov-pwa.js?v=20261119-1136';
+import { StkGovConfig } from '../vendor/stk-gov/stk-gov-config.js?v=20261119-1136';
+import { PreferencesService } from './application/PreferencesService.js?v=20261119-1136';
+import { PriceMonitorService } from './application/PriceMonitorService.js?v=20261119-1136';
+import { LocalPreferencesStore } from './infrastructure/LocalPreferencesStore.js?v=20261119-1136';
+import { downloadCsv } from './infrastructure/CsvExporter.js?v=20261119-1136';
+import { BASKET_DATA } from './infrastructure/data/BasketData.js?v=20261119-1136';
+import { REAL_ESTATE_DATA } from './infrastructure/data/RealEstateData.js?v=20261119-1136';
+import { SAO_PAULO_MUNICIPALITIES } from './infrastructure/data/SaoPauloData.js?v=20261119-1136';
+import { SOURCES_DATA } from './infrastructure/data/SourcesData.js?v=20261119-1136';
+import { preferencesSection } from './ui/PreferencesPanel.js?v=20261119-1136';
+import { PriceMonitorView } from './ui/PriceMonitorView.js?v=20261119-1136';
+import { SVG_ICONS } from './ui/SvgIcons.js?v=20261119-1136';
 
 function showToast(message) {
   const toast = document.getElementById('appToast');
@@ -24,6 +28,17 @@ function main() {
   const view = new PriceMonitorView(service);
   renderStkIcons(SVG_ICONS);
   view.start();
+
+  const preferences = new PreferencesService({
+    store: new LocalPreferencesStore(),
+    isCapital: code => BASKET_DATA.capitals.some(c => c.ibgeCode === code),
+    wageRange: view.wageRange(),
+  });
+  const capital = preferences.preferredCapital();
+  if (capital !== null) view.selectCapital(capital);
+  const wage = preferences.rememberedWage();
+  if (wage !== null) view.fillWage(wage);
+  view.onWageTyped(typed => preferences.saveWage(typed));
 
   let currentTab = 'tabPanorama';
   const shell = new StkGovShell({ app: 'pesquisa-preco', onTabChange: tab => { currentTab = tab; } });
@@ -42,6 +57,15 @@ function main() {
   const pwa = new StkGovPwa('sw.js');
   pwa.init();
   pwa.ligarBotao(document.getElementById('btnInstallApp'));
+
+  new StkGovConfig({
+    app: 'pesquisa-preco',
+    nome: 'Pesquisa de Preços Brasil',
+    pwa,
+    rotulosDados: { capital: 'Capital ao abrir o app', renda: 'Renda mensal' },
+    dataDosDados: () => `Referência: ${BASKET_DATA.period}`,
+    secoes: [preferencesSection({ preferences, view })],
+  }).iniciar();
 }
 
 try {

@@ -2,6 +2,9 @@
  * UI / src/ui/PriceMonitorView.js
  * Renders the tabs. Every value that comes from data goes through escapeHtml.
  */
+import { KIND } from '../domain/MunicipalityCoverage.js?v=20261119-1136';
+import { SVG_ICONS } from './SvgIcons.js?v=20261119-1136';
+
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const wholeCurrency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
 const decimal = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -9,6 +12,7 @@ const oneDecimal = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, ma
 
 const NO_DATA = '<span class="no-data">sem dado</span>';
 const BAR_LIMIT = 10;
+const MUNICIPALITY_PAGE_SIZE = 50;
 const SEGMENT_LABEL = { residential: 'residencial', commercial: 'comercial' };
 
 export const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -17,11 +21,15 @@ const wholeMoney = value => (value == null ? NO_DATA : wholeCurrency.format(valu
 const percent = value => (value == null ? NO_DATA : `${decimal.format(value)}%`);
 const signedPercent = value => (value == null ? NO_DATA : `${value > 0 ? '+' : ''}${decimal.format(value)}%`);
 const perSquareMeter = text => `${text}<small>/m²</small>`;
+const round2 = value => Math.round(value * 100) / 100;
 const time = ({ hours, minutes }) => `${hours}h${String(minutes).padStart(2, '0')}`;
 
 function tile(label, value, detail = '') {
   return `<div class="glass-panel tile"><span class="tile-label">${escapeHtml(label)}</span><strong class="tile-value">${value}</strong>${detail ? `<span class="tile-detail">${escapeHtml(detail)}</span>` : ''}</div>`;
 }
+
+/** Label and value pairs stacked in one cell. */
+const keyValue = pairs => pairs.map(([key, value]) => `<span class="kv"><span class="kv-key">${escapeHtml(key)}</span><span class="kv-value">${value}</span></span>`).join('');
 
 function table(columns, rows, empty = 'Nada encontrado com esse filtro.') {
   const head = columns.map(c => `<th scope="col"${c.numeric ? ' class="num"' : ''}>${escapeHtml(c.label)}</th>`).join('');
@@ -47,6 +55,7 @@ export class PriceMonitorView {
     this.service = service;
     this.doc = doc;
     this.segment = 'residential';
+    this.municipalityPage = 0;
     this.$ = id => doc.getElementById(id);
   }
 
@@ -75,8 +84,10 @@ export class PriceMonitorView {
     this.$('breakdownCapital').addEventListener('change', () => this.renderBreakdown());
     this.$('customWageCapital').addEventListener('change', () => this.renderCustomWage());
     this.$('customWageInput').addEventListener('input', () => this.renderCustomWage());
-    this.$('municipalitySearch').addEventListener('input', () => this.renderMunicipalities());
-    this.$('municipalityRegion').addEventListener('change', () => this.renderMunicipalities());
+    this.$('municipalitySearch').addEventListener('input', () => this.renderMunicipalities({ resetPage: true }));
+    this.$('municipalityRegion').addEventListener('change', () => this.renderMunicipalities({ resetPage: true }));
+    this.$('municipalityPrev').addEventListener('click', () => this.goToMunicipalityPage(this.municipalityPage - 1));
+    this.$('municipalityNext').addEventListener('click', () => this.goToMunicipalityPage(this.municipalityPage + 1));
     this.$('estateSearch').addEventListener('input', () => this.renderRealEstate());
     this.$('estateSort').addEventListener('change', () => this.renderRealEstate());
     this.$('estimateCity').addEventListener('change', () => this.renderEstimate());
@@ -153,6 +164,46 @@ export class PriceMonitorView {
     this.$('customWageCapital').innerHTML = options.join('');
   }
 
+  /** @returns {{code: number, label: string}[]} Capitals for the settings panel, same order as the selects */
+  capitalChoices() {
+    return [...this.$('breakdownCapital').options].map(o => ({ code: Number(o.value), label: o.textContent }));
+  }
+
+  /** @param {number|null} code null goes back to São Paulo, the app default */
+  selectCapital(code) {
+    const capital = code ?? this.service.capitals({ query: 'São Paulo' }).find(c => c.capital === 'São Paulo').ibgeCode;
+    this.$('breakdownCapital').value = String(capital);
+    this.$('customWageCapital').value = String(capital);
+    const estimate = this.$('estimateCity');
+    // Some capitals have no FipeZAP data: the estimate keeps the city it had
+    if ([...estimate.options].some(o => Number(o.value) === capital)) estimate.value = String(capital);
+    this.renderBreakdown();
+    this.renderCustomWage();
+    this.renderEstimate();
+  }
+
+  /** @returns {number} NaN when the field is empty */
+  typedWage() {
+    const { value } = this.$('customWageInput');
+    return value === '' ? Number.NaN : Number(value);
+  }
+
+  /** @param {number} wage */
+  fillWage(wage) {
+    this.$('customWageInput').value = String(wage);
+    this.renderCustomWage();
+  }
+
+  /** @param {(wage: number) => void} callback */
+  onWageTyped(callback) {
+    this.$('customWageInput').addEventListener('input', () => callback(this.typedWage()));
+  }
+
+  wageRange() {
+    const { min, max } = this.$('customWageInput');
+    return { min: Number(min), max: Number(max) };
+  }
+
   renderBreakdown() {
     const b = this.service.basketBreakdown(Number(this.$('breakdownCapital').value));
     const label = line => {
@@ -197,24 +248,56 @@ export class PriceMonitorView {
       + this.service.spRegions().map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
   }
 
-  renderMunicipalities() {
+  /** Seal that tells the municipality's own survey from a regional reference. Text and icon, never color alone. */
+  seal(kind, origin) {
+    const own = kind === KIND.REAL;
+    return `<span class="seal ${own ? 'seal-real' : 'seal-reference'}"><span class="stk-icon stk-icon-sm">${SVG_ICONS[own ? 'badgeCheck' : 'compass']}</span>`
+      + `<span>${own ? 'Pesquisa do município' : 'Referência da região'}${origin ? `<small>${escapeHtml(origin)}</small>` : ''}</span></span>`;
+  }
+
+  basketCell(m) {
+    const b = m.basketView;
+    const origin = b.kind === KIND.REFERENCE ? `${b.originCity} (capital), ${b.period}` : `${b.period}${b.comparable ? '' : ', pesquisa local'}`;
+    return `<span class="cell-stack"><span>${money(b.value)}</span>${this.seal(b.kind, origin)}</span>`;
+  }
+
+  estateCell(estate, yearsOfRent) {
+    const lines = [['Compra', wholeMoney(estate.sale)], ['Aluguel', money(estate.rent)]];
+    if (yearsOfRent !== undefined) lines.push(['Anos de aluguel', yearsOfRent == null ? NO_DATA : oneDecimal.format(yearsOfRent)]);
+    const origin = estate.kind === KIND.REFERENCE ? `${estate.originCity} (${estate.levelLabel})` : '';
+    return `<span class="cell-stack">${keyValue(lines)}${this.seal(estate.kind, origin)}</span>`;
+  }
+
+  renderMunicipalities({ resetPage = false } = {}) {
+    if (resetPage) this.municipalityPage = 0;
     const rows = this.service.spMunicipalities({ query: this.$('municipalitySearch').value, region: this.$('municipalityRegion').value });
     this.lastMunicipalities = rows;
+    const pages = Math.max(1, Math.ceil(rows.length / MUNICIPALITY_PAGE_SIZE));
+    this.municipalityPage = Math.min(this.municipalityPage, pages - 1);
+    const first = this.municipalityPage * MUNICIPALITY_PAGE_SIZE;
+    const visible = rows.slice(first, first + MUNICIPALITY_PAGE_SIZE);
     this.$('municipalityCount').textContent = `${rows.length} municípios`;
-    const basket = m => {
-      if (!m.basket) return NO_DATA;
-      const badge = m.basket.comparable ? '' : ` <small>${escapeHtml(m.basket.period)}, pesquisa local</small>`;
-      return `${money(m.basket.value)}${badge}`;
-    };
+    const c = this.service.spCoverage();
+    this.$('municipalityCoverage').textContent = `No estado: cesta com pesquisa do município em ${c.basketReal} e referência em ${c.basketReference}; `
+      + `imóvel residencial do próprio município em ${c.residentialReal} e referência em ${c.residentialReference}.`;
+    this.$('municipalityPageInfo').textContent = rows.length
+      ? `${first + 1} a ${first + visible.length} de ${rows.length}, página ${this.municipalityPage + 1} de ${pages}`
+      : 'Nenhum município encontrado';
+    this.$('municipalityPrev').disabled = this.municipalityPage === 0;
+    this.$('municipalityNext').disabled = this.municipalityPage >= pages - 1;
     this.$('municipalityTable').innerHTML = table([
-      { label: 'Município', cell: m => `<strong>${escapeHtml(m.municipality)}</strong> <small>IBGE ${m.ibgeCode}</small>` },
-      { label: 'Região intermediária', cell: m => escapeHtml(m.intermediateRegion) },
-      { label: 'Cesta', numeric: true, cell: basket },
-      { label: 'Compra res. (m²)', numeric: true, cell: m => wholeMoney(m.market?.residentialSale) },
-      { label: 'Aluguel res. (m²)', numeric: true, cell: m => money(m.market?.residentialRent) },
-      { label: 'Compra com. (m²)', numeric: true, cell: m => wholeMoney(m.market?.commercialSale) },
-      { label: 'Aluguel com. (m²)', numeric: true, cell: m => money(m.market?.commercialRent) },
-    ], rows);
+      { label: 'Município', cell: m => `<strong>${escapeHtml(m.municipality)}</strong> <small>IBGE ${m.ibgeCode} · ${escapeHtml(m.intermediateRegion)}</small>` },
+      { label: 'Cesta básica', numeric: true, cell: m => this.basketCell(m) },
+      { label: 'Na renda', numeric: true, cell: m => `<span class="cell-stack">${keyValue([['% do mínimo líquido', percent(m.wagePercent)], ['Tempo de trabalho', time(m.workTime)]])}</span>` },
+      { label: 'Imóvel residencial (m²)', numeric: true, cell: m => this.estateCell(m.estate.residential, m.yearsOfRent) },
+      { label: 'Imóvel comercial (m²)', numeric: true, cell: m => this.estateCell(m.estate.commercial) },
+    ], visible);
+  }
+
+  goToMunicipalityPage(page) {
+    this.municipalityPage = Math.max(0, page);
+    this.renderMunicipalities();
+    this.$('municipalityCount').scrollIntoView?.({ block: 'start' });
   }
 
   fillEstimateCities() {
@@ -285,9 +368,17 @@ export class PriceMonitorView {
       ] };
     }
     if (tabId === 'tabMunicipios') {
+      const kind = value => (value === KIND.REAL ? 'real' : 'referência');
+      const estateColumns = e => [kind(e.kind), e.originCity, e.kind === KIND.REAL ? '' : e.levelLabel, e.sale, e.rent];
       return { name: 'municipios-sp-set2026.csv', rows: [
-        ['Código IBGE', 'Município', 'Região intermediária', 'Região imediata', 'Cesta', 'Período da cesta', 'Fonte da cesta', 'Compra residencial (R$/m²)', 'Aluguel residencial (R$/m²)', 'Compra comercial (R$/m²)', 'Aluguel comercial (R$/m²)'],
-        ...this.lastMunicipalities.map(m => [m.ibgeCode, m.municipality, m.intermediateRegion, m.immediateRegion, m.basket?.value, m.basket?.period, m.basket?.source, m.market?.residentialSale, m.market?.residentialRent, m.market?.commercialSale, m.market?.commercialRent]),
+        ['Código IBGE', 'Município', 'Região intermediária', 'Região imediata',
+          'Tipo da cesta (real/referência)', 'Origem da cesta', 'Cesta', 'Período da cesta', 'Fonte da cesta', '% do mínimo líquido (sobre o valor da coluna Cesta)', 'Tempo de trabalho (sobre o valor da coluna Cesta)',
+          'Tipo do imóvel residencial (real/referência)', 'Origem do imóvel residencial', 'Nível da referência residencial', 'Compra residencial (R$/m²)', 'Aluguel residencial (R$/m²)', 'Anos de aluguel residencial',
+          'Tipo do imóvel comercial (real/referência)', 'Origem do imóvel comercial', 'Nível da referência comercial', 'Compra comercial (R$/m²)', 'Aluguel comercial (R$/m²)'],
+        ...this.lastMunicipalities.map(m => [m.ibgeCode, m.municipality, m.intermediateRegion, m.immediateRegion,
+          kind(m.basketView.kind), m.basketView.originCity, m.basketView.value, m.basketView.period, m.basketView.source, round2(m.wagePercent), time(m.workTime),
+          ...estateColumns(m.estate.residential), m.yearsOfRent == null ? null : round2(m.yearsOfRent),
+          ...estateColumns(m.estate.commercial)]),
       ] };
     }
     if (tabId === 'tabImoveis') {

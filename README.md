@@ -2,7 +2,23 @@
 
 **App publicado:** https://celsoalmeidalf.github.io/pesquisa-preco/
 
-Cesta básica nas 27 capitais e preços de compra e aluguel de imóveis residenciais e comerciais, com fonte para cada número. PWA sem dependências npm, no design system comum dos projetos 8.X.
+Cesta básica nas 27 capitais, os 645 municípios de SP (com valor real ou referência da região, sempre marcados) e preços de compra e aluguel de imóveis residenciais e comerciais, com fonte para cada número. PWA sem dependências npm, no design system comum dos projetos 8.X.
+
+## Municípios de SP: valor real e referência da região
+
+A aba "Municípios de SP" lista os 645 municípios (IBGE Localidades, UF 35). Cada valor tem um tipo, mostrado por um selo e gravado no CSV (coluna "real" ou "referência" e a coluna de origem):
+
+- **Pesquisa do município (real):** valor medido na própria cidade. Cesta: São Paulo (DIEESE) e Campinas (PUC-Campinas, outro mês, não comparável). Imóveis: cidades do Índice FipeZAP, por segmento (residencial 16 municípios de SP; o comercial cobre menos).
+- **Referência da região:** não é pesquisa do município. É o valor oficial mais próximo, copiado da fonte sem conta nenhuma, com a cidade de origem. Cesta: a da capital, a única oficial no estado (DIEESE). Imóveis, por segmento: a cidade FipeZAP da mesma região imediata do IBGE; sem ela, a da região intermediária; sem ela, a capital. Havendo mais de uma cidade no nível, vale a que dá nome à região, depois a ordem alfabética.
+- Os cálculos derivados (% do salário mínimo, tempo de trabalho, anos de aluguel) rodam sobre o valor mostrado. Na referência, partem da referência, e a tela avisa.
+
+Nenhum número é estimado: a regra de "nada de número estimado" continua valendo, e a referência regional é a única exceção. A lista usa 50 municípios por página; a busca ignora acento e caixa, e há filtro por região intermediária. O CSV exporta todos os resultados do filtro, não só a página.
+
+Para incluir pesquisa própria de outro município, acrescente-o em `LOCAL_BASKETS` no `scripts/build_data.py`; o build passa a tratá-lo como real.
+
+## Configurações
+
+A engrenagem do topo abre o painel comum: tema (escuro, claro ou do sistema), capital ao abrir o app, opção de lembrar a renda, o que está guardado neste navegador, com opção de apagar, e a busca por versão nova. A renda só é guardada se a pessoa marcar a opção, fica só no navegador e sai ao desmarcar.
 
 ## Como rodar
 
@@ -36,7 +52,7 @@ Nunca edite `src/infrastructure/data/` à mão. O build para com erro se um nome
 
 - Cesta: Conab/DIEESE, Pesquisa Nacional da Cesta Básica de Alimentos.
 - Imóveis: Índice FipeZAP (residencial em 56 cidades; comercial em 10).
-- Nomes, códigos e regiões: API de Localidades do IBGE.
+- Nomes, códigos e regiões: API de Localidades do IBGE (inclui `estados/35/municipios`, os 645 de SP; o build para se o número for outro).
 
 Links e SHA-256 dos arquivos ficam na aba "Fontes e método".
 

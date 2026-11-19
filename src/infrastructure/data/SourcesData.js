@@ -44,6 +44,11 @@ export const SOURCES_DATA = Object.freeze({
    "sha256": "86ecdccdf97d72e7e5e46f0854cfcea8bacc28154cc1bc4ed0e6110e3a6c9c02"
   },
   {
+   "file": "ibge/ibge_municipios_sp.json",
+   "url": "https://servicodados.ibge.gov.br/api/v1/localidades/estados/35/municipios",
+   "sha256": "c06b7327c3bf7475d0c63c90c5f8c9122464fd0ed84bc98709a2a7f82649d14b"
+  },
+  {
    "file": "dieese/p*_t*.html (28 consultas)",
    "url": "https://www.dieese.org.br/cesta/",
    "sha256": "8fd6184561d6dd0e0036d4cf6f6d42c36c4645e634b03d90f4348948da53c0c8"

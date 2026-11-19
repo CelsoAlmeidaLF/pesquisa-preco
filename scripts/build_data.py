@@ -51,7 +51,14 @@ DOWNLOADS = {
     'fipezap/fipezap-202609-residencial-venda-publico.pdf': 'https://downloads.fipe.org.br/indices/fipezap/fipezap-202609-residencial-venda-publico.pdf',
     'ibge/ibge_estados.json': 'https://servicodados.ibge.gov.br/api/v1/localidades/estados',
     'ibge/ibge_municipios.json': 'https://servicodados.ibge.gov.br/api/v1/localidades/municipios',
+    # All municipalities of the state of São Paulo (UF code 35), with immediate and intermediate regions
+    'ibge/ibge_municipios_sp.json': 'https://servicodados.ibge.gov.br/api/v1/localidades/estados/35/municipios',
 }
+SP_UF_CODE = 35
+SP_MUNICIPALITY_COUNT = 645  # IBGE count for the state; any other number stops the build
+SP_CAPITAL = 'São Paulo'
+DIEESE_REPORT_URL = DOWNLOADS['dieese/202609cestabasica.pdf']
+
 
 # DIEESE database product codes
 PRODUCTS = {
@@ -82,13 +89,6 @@ CAPITAL_UF = {
 # Text of the September 2026 report: black beans in the South, Rio de Janeiro and Vitória
 BLACK_BEANS_CAPITALS = {'Curitiba', 'Florianópolis', 'Porto Alegre', 'Rio de Janeiro', 'Vitória'}
 
-# Municipalities of the state of São Paulo listed in the original page (fontes/index.html)
-ORIGINAL_SP_MUNICIPALITIES = [
-    'São Paulo', 'Santo André', 'São Bernardo do Campo', 'São Caetano do Sul', 'Guarulhos', 'Osasco', 'Barueri',
-    'Santos', 'Praia Grande', 'Campinas', 'Jundiaí', 'Piracicaba', 'Americana', 'São José dos Campos', 'Taubaté',
-    'Sorocaba', 'Ribeirão Preto', 'Franca', 'São Carlos', 'Araraquara', 'Bauru', 'São José do Rio Preto', 'Marília',
-    'Presidente Prudente', 'Registro',
-]
 # Local survey, not comparable: other month and other collection. Press source checked on 2026-11-04.
 LOCAL_BASKETS = {
     'Campinas': dict(
@@ -305,19 +305,82 @@ def build_real_estate(index):
     return dict(period=PERIOD_LABEL, national=national, cities=cities)
 
 
-def build_sp_municipalities(index, real_estate, basket):
-    in_fipezap = {c['city'] for c in real_estate['cities'] if c['uf'] == 'SP'}
-    names = sorted(set(ORIGINAL_SP_MUNICIPALITIES) | in_fipezap)
-    capital_total = next(c['publishedTotal'] for c in basket['capitals'] if c['capital'] == 'São Paulo')
+def load_sp_places():
+    """The 645 municipalities of SP straight from the IBGE Localidades API (UF 35)."""
+    raw = json.loads((RAW / 'ibge' / 'ibge_municipios_sp.json').read_text(encoding='utf-8'))
+    places = []
+    for item in raw:
+        immediate = item['regiao-imediata']
+        intermediate = immediate['regiao-intermediaria']
+        if intermediate['UF']['id'] != SP_UF_CODE or intermediate['UF']['sigla'] != 'SP':
+            fail(f'IBGE: {item["nome"]} não é do estado de São Paulo')
+        places.append(dict(ibgeCode=item['id'], municipality=item['nome'],
+                           intermediateRegion=intermediate['nome'], immediateRegion=immediate['nome']))
+    codes = [p['ibgeCode'] for p in places]
+    if len(places) != SP_MUNICIPALITY_COUNT or len(set(codes)) != len(codes):
+        fail(f'IBGE: {len(places)} municípios de SP ({len(set(codes))} códigos únicos) em vez de {SP_MUNICIPALITY_COUNT}')
+    places.sort(key=lambda p: p['municipality'])
+    return places
+
+
+def estate_coverage(row, segment):
+    return row.get(f'{segment}Sale') is not None or row.get(f'{segment}Rent') is not None
+
+
+def pick_estate_reference(place, candidates, capital):
+    """Nearest FipeZAP city with data: same immediate region, else same intermediate region, else the capital.
+    Tie: the city that gives its name to the region, then alphabetical order."""
+    for level, key in (('immediate', 'immediateRegion'), ('intermediate', 'intermediateRegion')):
+        same = [c for c in candidates if c[key] == place[key]]
+        if same:
+            return level, min(same, key=lambda c: (c['municipality'] != place[key], c['municipality']))
+    return 'capital', capital
+
+
+def build_sp_municipalities(places, real_estate, basket):
+    capital_total = next(c['publishedTotal'] for c in basket['capitals'] if c['capital'] == SP_CAPITAL)
+    capital_code = next(p['ibgeCode'] for p in places if p['municipality'] == SP_CAPITAL)
+    unknown = set(LOCAL_BASKETS) - {p['municipality'] for p in places}
+    if unknown:
+        fail(f'Pesquisa própria de município fora de SP: {sorted(unknown)}')
+
+    fipezap = {c['ibgeCode']: c for c in real_estate['cities'] if c['uf'] == 'SP'}
+    by_code = {p['ibgeCode']: p for p in places}
+    if not set(fipezap) <= set(by_code):
+        fail('FipeZAP: cidade de SP fora da tabela do IBGE')
+    # Candidates for a reference, per segment (the commercial index covers only 10 cities)
+    candidates = {
+        segment: [by_code[code] for code, row in fipezap.items() if estate_coverage(row, segment)]
+        for segment in ('residential', 'commercial')
+    }
+    for segment, found in candidates.items():
+        if not any(c['ibgeCode'] == capital_code for c in found):
+            fail(f'FipeZAP {segment}: sem dado para a capital, que é a última referência')
+
     municipalities = []
-    for name in names:
-        place = ibge_lookup(index, name, 'SP')
-        entry = dict(ibgeCode=place['ibgeCode'], municipality=place['name'], intermediateRegion=place['intermediateRegion'],
-                     immediateRegion=place['immediateRegion'], basket=None, hasRealEstate=name in in_fipezap)
-        if name == 'São Paulo':
+    for place in places:
+        entry = dict(place, basket=None, basketReference=None, basketKind='real', hasRealEstate=place['ibgeCode'] in fipezap)
+        if place['municipality'] == SP_CAPITAL:
             entry['basket'] = dict(value=capital_total, period='set/2026', source='DIEESE/Conab', comparable=True)
-        elif name in LOCAL_BASKETS:
-            entry['basket'] = dict(LOCAL_BASKETS[name], comparable=False)
+        elif place['municipality'] in LOCAL_BASKETS:
+            entry['basket'] = dict(LOCAL_BASKETS[place['municipality']], comparable=False)
+        else:
+            # Official value of the capital, copied without any calculation. Never a local price.
+            entry['basketKind'] = 'reference'
+            entry['basketReference'] = dict(
+                value=capital_total, period='set/2026', source='DIEESE/Conab, Pesquisa Nacional da Cesta Básica',
+                url=DIEESE_REPORT_URL, scope='capital', originIbgeCode=capital_code, originCity=SP_CAPITAL,
+                label='referência da região (DIEESE São Paulo capital), não é pesquisa do município')
+        estate = {}
+        for segment in ('residential', 'commercial'):
+            row = fipezap.get(place['ibgeCode'])
+            if row and estate_coverage(row, segment):
+                estate[segment] = dict(kind='real', level='municipality', originIbgeCode=place['ibgeCode'], originCity=place['municipality'])
+            else:
+                level, origin = pick_estate_reference(place, candidates[segment], by_code[capital_code])
+                estate[segment] = dict(kind='reference', level=level, originIbgeCode=origin['ibgeCode'], originCity=origin['municipality'])
+            estate[segment]['source'] = 'Índice FipeZAP'
+        entry['realEstate'] = estate
         municipalities.append(entry)
     return municipalities
 
@@ -333,9 +396,13 @@ def build_sources():
     return dict(collectedAt=COLLECTED_AT, files=files)
 
 
-def write_module(name, export, value, source_note):
+def write_module(name, export, value, source_note, one_line_per_item=False):
     OUT.mkdir(parents=True, exist_ok=True)
-    body = json.dumps(value, ensure_ascii=False, indent=1)
+    if one_line_per_item:
+        # One municipality per line keeps the 645-entry file readable in diffs and small
+        body = '[\n' + ',\n'.join(' ' + json.dumps(item, ensure_ascii=False, separators=(',', ':')) for item in value) + '\n]'
+    else:
+        body = json.dumps(value, ensure_ascii=False, indent=1)
     (OUT / name).write_text(
         f'// Infrastructure: generated by scripts/build_data.py. Do not edit by hand.\n// {source_note}\n'
         f'export const {export} = Object.freeze({body});\n', encoding='utf-8')
@@ -348,12 +415,15 @@ def main():
     _, index = load_ibge()
     basket = build_basket(index)
     real_estate = build_real_estate(index)
-    municipalities = build_sp_municipalities(index, real_estate, basket)
+    municipalities = build_sp_municipalities(load_sp_places(), real_estate, basket)
     write_module('BasketData.js', 'BASKET_DATA', basket, f'Fonte: Conab/DIEESE, {PERIOD_LABEL}; nomes e códigos: IBGE.')
     write_module('RealEstateData.js', 'REAL_ESTATE_DATA', real_estate, f'Fonte: Índice FipeZAP, {PERIOD_LABEL}; nomes e códigos: IBGE.')
-    write_module('SaoPauloData.js', 'SAO_PAULO_MUNICIPALITIES', municipalities, 'Nomes, códigos e regiões: IBGE.')
+    write_module('SaoPauloData.js', 'SAO_PAULO_MUNICIPALITIES', municipalities, 'Nomes, códigos e regiões: IBGE Localidades (UF 35). Cesta e imóveis: valor real ou referência da região, sempre marcados.', one_line_per_item=True)
     write_module('SourcesData.js', 'SOURCES_DATA', build_sources(), 'Prova de origem: SHA-256 dos arquivos em data/raw/.')
-    print(f'Conferido: 27 capitais, {len(real_estate["cities"])} cidades do FipeZAP, {len(municipalities)} municípios de SP.')
+    real_basket = sum(m['basketKind'] == 'real' for m in municipalities)
+    real_estate_res = sum(m['realEstate']['residential']['kind'] == 'real' for m in municipalities)
+    print(f'Conferido: 27 capitais, {len(real_estate["cities"])} cidades do FipeZAP, {len(municipalities)} municípios de SP '
+          f'({real_basket} com cesta própria, {real_estate_res} com imóvel residencial próprio).')
 
 
 if __name__ == '__main__':

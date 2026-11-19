@@ -23,9 +23,10 @@
   <meta name="apple-mobile-web-app-title" content="Preços Brasil">
 
   <!-- Design system comum dos projetos 8.X (cópia de _design-system/, não editar aqui) + estilos do conteúdo -->
-  <link rel="stylesheet" href="css/fonts.css?v=20261104-1703">
-  <link rel="stylesheet" href="vendor/stk-gov/stk-gov.css?v=20261104-1703">
-  <link rel="stylesheet" href="css/style.css?v=20261104-1703">
+  <script src="vendor/stk-gov/stk-gov-tema.js?v=20261119-1136" data-app="pesquisa-preco"></script>
+  <link rel="stylesheet" href="css/fonts.css?v=20261119-1136">
+  <link rel="stylesheet" href="vendor/stk-gov/stk-gov.css?v=20261119-1136">
+  <link rel="stylesheet" href="css/style.css?v=20261119-1136">
 </head>
 <body>
   <div id="appFatalError" class="app-fatal-error" role="alert" hidden>
@@ -166,16 +167,28 @@
         <div class="tab-pane" id="tabMunicipios" role="tabpanel">
           <div class="page-head">
             <h2>Municípios do Estado de São Paulo</h2>
-            <p>Nomes, códigos e regiões do IBGE. Imóveis pelo Índice FipeZAP, em <span data-bind="period"></span>.</p>
+            <p>Todos os 645 municípios, com nomes, códigos e regiões do IBGE. Cesta pelo DIEESE e imóveis pelo Índice FipeZAP, em <span data-bind="period"></span>.</p>
           </div>
-          <p class="note note-warn"><span data-stk-icon="alert"></span><span>Não há pesquisa oficial de cesta básica para os municípios paulistas: o DIEESE só cobre as capitais. Por isso, este app não mostra preço de alimentos nessas cidades. Onde aparece "sem dado", a fonte não publica o valor.</span></p>
+          <div class="note note-warn" id="municipalityNote">
+            <span data-stk-icon="alert"></span>
+            <div>
+              <p><strong>Pesquisa do município</strong> é o valor medido naquela cidade. <strong>Referência da região</strong> não é pesquisa do município: é o valor oficial mais próximo, copiado da fonte sem nenhuma conta nossa. Nada aqui é estimado.</p>
+              <p>Para a cesta, a única pesquisa oficial do estado é a da capital (DIEESE), usada como referência nos demais. Para imóveis, a referência é a cidade do FipeZAP da mesma região imediata do IBGE; sem ela, a da região intermediária; sem ela, a capital. O selo mostra a cidade de origem. O percentual do salário mínimo, o tempo de trabalho e os anos de aluguel são calculados sobre o valor mostrado, então, na referência, partem da referência.</p>
+            </div>
+          </div>
           <div class="toolbar">
-            <label class="field field-grow"><span>Buscar</span><input type="search" id="municipalitySearch" placeholder="Município ou região" autocomplete="off"></label>
+            <label class="field field-grow"><span>Buscar</span><input type="search" id="municipalitySearch" placeholder="Nome do município" autocomplete="off"></label>
             <label class="field"><span>Região intermediária (IBGE)</span><select id="municipalityRegion"></select></label>
           </div>
           <section class="glass-panel panel">
             <h3 id="municipalityCount">Municípios</h3>
+            <p class="panel-sub" id="municipalityCoverage"></p>
             <div class="table-wrap"><table class="data-table" id="municipalityTable"></table></div>
+            <nav class="pager" aria-label="Páginas da lista de municípios">
+              <button type="button" class="action-btn action-btn-secondary" id="municipalityPrev">Anterior</button>
+              <span class="pager-info" id="municipalityPageInfo" aria-live="polite"></span>
+              <button type="button" class="action-btn action-btn-secondary" id="municipalityNext">Próxima</button>
+            </nav>
           </section>
         </div>
 
@@ -308,6 +321,6 @@
 
   <div class="stk-toast" id="appToast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="src/Program.js?v=20261104-1703"></script>
+  <script type="module" src="src/Program.js?v=20261119-1136"></script>
 </body>
 </html>
