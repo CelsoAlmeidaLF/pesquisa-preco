@@ -22,7 +22,7 @@ A aba "Seu salário" mede quanto a faixa de isenção do Imposto de Renda ficou 
 
 - **Defasagem** = (IPCA acumulado desde dez/1995) ÷ (quanto a isenção subiu desde 1996, de R$ 900 ao valor de hoje) − 1. Até dez/2025: **120,48%**, isenção corrigida de **R$ 5.355,09**. A tela diz qual base usa (só a faixa de isenção; a redução da Lei 15.270 não entra no número) e mostra a segunda visão, a isenção efetiva em salário bruto. A Receita não publica um índice oficial; os 157% do Sindifisco usam outro método e só aparecem como citação.
 - **Comparação pessoal**: bruto → INSS progressivo → base → tabela de 2026 → redução da Lei 15.270 (que usa o salário **bruto**). A tabela corrigida multiplica limites e parcelas a deduzir pelo fator de defasagem, ao centavo. Sem dependentes, 13º e ajuste anual. Os casos de teste são os do Daniel (19/11/2026).
-- **Selo**: a defasagem é "exata" (identidade sobre números oficiais e confirmados); a comparação pessoal é "estimativa" enquanto a tabela do INSS de 2026 estiver `a-confirmar` no módulo de parâmetros.
+- **Selo**: a defasagem sai como **"estimativa"** (decidido pelo Celso em 19/11/2026), com aviso de que o número depende da base e do método (o Sindifisco chega a 157% por outro); a comparação pessoal também é "estimativa", pois usa o fator de defasagem e a tabela do INSS de 2026 ainda `a-confirmar`.
 - **Privacidade**: o salário digitado fica só na memória da página; não é salvo (nem no `localStorage`) nem enviado.
 - Os números (tabela do IRPF, INSS, isenção desde 1996, IPCA número-índice) vêm do módulo comum de parâmetros e valem na data do cálculo (RN-M01). IPCA é valor fixo com fonte e data; a aba não consulta a internet.
 

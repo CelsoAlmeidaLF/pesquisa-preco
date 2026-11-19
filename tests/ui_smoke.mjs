@@ -188,7 +188,7 @@ try {
   await aba('tabSalario');
   const defasagem = await texto('lagTiles');
   assert(['120,48%', '2.428,80', '5.355,09', '5.996,0'].every(v => defasagem.includes(v)), 'Seu salário: tabela 120,48% defasada, isenção de R$ 2.428,80 e corrigida de R$ 5.355,09');
-  assert((await texto('lagSeal')) === 'Exato' && (await texto('lagNote')).includes('Lei 15.270 não entra'), 'Defasagem tem selo Exato e diz qual base usa');
+  assert((await texto('lagSeal')) === 'Estimativa' && (await texto('lagNote')).includes('Lei 15.270 não entra') && (await texto('lagNote')).includes('depende da base e do método'), 'Defasagem tem selo Estimativa, diz qual base usa e avisa que depende do método');
   assert(await avaliar('salaryTiles.children.length') === 0 && (await texto('salaryNote')).includes('Informe seu salário bruto'), 'Sem salário, a comparação orienta o preenchimento');
   await definir('salaryGrossInput', '6000');
   const pessoal = await texto('salaryTiles');

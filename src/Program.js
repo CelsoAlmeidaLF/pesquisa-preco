@@ -1,18 +1,18 @@
 /** Composition root / src/Program.js: wires data, service, view, shell and PWA. */
-import { StkGovShell, renderStkIcons } from '../vendor/stk-gov/stk-gov-shell.js?v=20261119-1304';
-import { StkGovPwa } from '../vendor/stk-gov/stk-gov-pwa.js?v=20261119-1304';
-import { StkGovConfig } from '../vendor/stk-gov/stk-gov-config.js?v=20261119-1304';
-import { PreferencesService } from './application/PreferencesService.js?v=20261119-1304';
-import { PriceMonitorService } from './application/PriceMonitorService.js?v=20261119-1304';
-import { LocalPreferencesStore } from './infrastructure/LocalPreferencesStore.js?v=20261119-1304';
-import { downloadCsv } from './infrastructure/CsvExporter.js?v=20261119-1304';
-import { BASKET_DATA } from './infrastructure/data/BasketData.js?v=20261119-1304';
-import { REAL_ESTATE_DATA } from './infrastructure/data/RealEstateData.js?v=20261119-1304';
-import { SAO_PAULO_MUNICIPALITIES } from './infrastructure/data/SaoPauloData.js?v=20261119-1304';
-import { SOURCES_DATA } from './infrastructure/data/SourcesData.js?v=20261119-1304';
-import { preferencesSection } from './ui/PreferencesPanel.js?v=20261119-1304';
-import { PriceMonitorView } from './ui/PriceMonitorView.js?v=20261119-1304';
-import { SVG_ICONS } from './ui/SvgIcons.js?v=20261119-1304';
+import { StkGovShell, renderStkIcons } from '../vendor/stk-gov/stk-gov-shell.js?v=20261119-1403';
+import { StkGovPwa } from '../vendor/stk-gov/stk-gov-pwa.js?v=20261119-1403';
+import { StkGovConfig } from '../vendor/stk-gov/stk-gov-config.js?v=20261119-1403';
+import { PreferencesService } from './application/PreferencesService.js?v=20261119-1403';
+import { PriceMonitorService } from './application/PriceMonitorService.js?v=20261119-1403';
+import { LocalPreferencesStore } from './infrastructure/LocalPreferencesStore.js?v=20261119-1403';
+import { downloadCsv } from './infrastructure/CsvExporter.js?v=20261119-1403';
+import { BASKET_DATA } from './infrastructure/data/BasketData.js?v=20261119-1403';
+import { REAL_ESTATE_DATA } from './infrastructure/data/RealEstateData.js?v=20261119-1403';
+import { SAO_PAULO_MUNICIPALITIES } from './infrastructure/data/SaoPauloData.js?v=20261119-1403';
+import { SOURCES_DATA } from './infrastructure/data/SourcesData.js?v=20261119-1403';
+import { preferencesSection } from './ui/PreferencesPanel.js?v=20261119-1403';
+import { PriceMonitorView } from './ui/PriceMonitorView.js?v=20261119-1403';
+import { SVG_ICONS } from './ui/SvgIcons.js?v=20261119-1403';
 
 function showToast(message) {
   const toast = document.getElementById('appToast');

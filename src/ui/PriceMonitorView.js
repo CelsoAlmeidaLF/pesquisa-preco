@@ -2,8 +2,8 @@
  * UI / src/ui/PriceMonitorView.js
  * Renders the tabs. Every value that comes from data goes through escapeHtml.
  */
-import { KIND } from '../domain/MunicipalityCoverage.js?v=20261119-1304';
-import { SVG_ICONS } from './SvgIcons.js?v=20261119-1304';
+import { KIND } from '../domain/MunicipalityCoverage.js?v=20261119-1403';
+import { SVG_ICONS } from './SvgIcons.js?v=20261119-1403';
 
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const wholeCurrency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
@@ -367,7 +367,7 @@ export class PriceMonitorView {
     const exact = seal === 'exato';
     const reason = exact
       ? 'Fórmula exata e todos os números oficiais e confirmados'
-      : 'Algum número ainda a confirmar na fonte primária, ou a fórmula depende de premissas';
+      : 'Algum número a confirmar na fonte primária, ou o resultado depende de base e método (premissas)';
     return `<span class="badge-status ${exact ? 'badge-ok' : 'badge-alerta'}" title="${escapeHtml(reason)}">${exact ? 'Exato' : 'Estimativa'}</span>`;
   }
 
@@ -403,7 +403,7 @@ export class PriceMonitorView {
       tile('Isenção corrigida seria', money(lag.correctedExemption), 'Por mês, de base de cálculo'),
       ...(lag.effective ? [tile('Isenção efetiva hoje (salário bruto)', wholeMoney(lag.effective.currentGross), `Corrigida: ${money(lag.effective.correctedGross)} brutos (${percentage(lag.effective.pctAbove)} a mais)`)] : []),
     ].join('');
-    this.$('lagNote').textContent = `${lag.base}. Os 157% do Sindifisco usam outro método e não são calculados aqui.`;
+    this.$('lagNote').textContent = `${lag.base}. Estimativa: ${lag.avisos.join('; ')}. Os 157% do Sindifisco não são calculados aqui.`;
     this.$('salaryInputs').innerHTML = PriceMonitorView.inputRows(personal ? personal.insumos : lag.insumos);
 
     if (!personal) {

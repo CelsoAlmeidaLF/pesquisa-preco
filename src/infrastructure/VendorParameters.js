@@ -1,4 +1,4 @@
-import * as vendorModule from '../../vendor/stk-gov/stk-gov-parametros.js?v=20261119-1304';
+import * as vendorModule from '../../vendor/stk-gov/stk-gov-parametros.js?v=20261119-1403';
 
 /**
  * Infrastructure / src/infrastructure/VendorParameters.js

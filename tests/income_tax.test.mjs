@@ -155,7 +155,8 @@ test('serviço: defasagem de dez/1995 a dez/2025 é 120,48% e a isenção corrig
   const { lag, personal } = service.incomeTaxLag({ untilMonth: '2025-12', on: ON });
   assert.ok(Math.abs(lag.valor.lagPct - 120.48) < 0.005);
   assert.equal(lag.correctedExemption, 5355.09);
-  assert.equal(lag.selo, 'exato');
+  assert.equal(lag.selo, 'estimativa', 'decidido pelo Celso em 19/11/2026: a defasagem é estimativa');
+  assert.match(lag.avisos[0], /depende da base e do método.*157%/);
   assert.equal(personal, null);
   assert.deepEqual(lag.insumos.map(i => i.id), ['ipca_numero_indice', 'irpf_isencao_mensal', 'irpf_isencao_mensal']);
   assert.match(lag.base, /Lei 15\.270 não entra/);
@@ -171,18 +172,19 @@ test('serviço: até out/2026 a defasagem passa de 129% (IPCA de 519%, isenção
 
 test('serviço: a comparação pessoal é estimativa enquanto a tabela do INSS estiver a confirmar', () => {
   const { lag, personal } = service.incomeTaxLag({ grossIncome: 6000, on: ON });
-  assert.equal(lag.selo, 'exato');
+  assert.equal(lag.selo, 'estimativa');
   assert.equal(personal.selo, 'estimativa');
   assert.ok(personal.insumos.some(i => i.id === 'tabela_inss_empregado' && i.status === 'a-confirmar'));
 });
 
-test('serviço: com todos os números confirmados a comparação passa a exata', () => {
+test('serviço: mesmo com todos os números confirmados, defasagem e comparação seguem estimativa (método)', () => {
   const confirmed = new VendorParameters({
     vigencia: (id, d) => parameters.validity(id, d), valor: (id, d) => parameters.value(id, d),
     insumo: (id, d) => ({ ...parameters.input(id, d), status: 'confirmado' }), selo: (i, e) => parameters.seal(i, e),
   });
   const confirmedService = new PriceMonitorService({ basket: BASKET_DATA, realEstate: REAL_ESTATE_DATA, municipalities: [], sources: { files: [] }, parameters: confirmed });
-  assert.equal(confirmedService.incomeTaxLag({ grossIncome: 6000, on: ON }).personal.selo, 'exato');
+  const confirmedResult = confirmedService.incomeTaxLag({ grossIncome: 6000, on: ON });
+  assert.deepEqual([confirmedResult.lag.selo, confirmedResult.personal.selo], ['estimativa', 'estimativa']);
 });
 
 test('serviço (RN-M01): lê a lei da data pedida; em 2025 não há redução nem tabela do INSS', () => {
