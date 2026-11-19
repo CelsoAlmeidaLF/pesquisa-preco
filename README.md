@@ -16,6 +16,20 @@ Nenhum número é estimado: a regra de "nada de número estimado" continua valen
 
 Para incluir pesquisa própria de outro município, acrescente-o em `LOCAL_BASKETS` no `scripts/build_data.py`; o build passa a tratá-lo como real.
 
+## Seu salário: defasagem da tabela do IRPF
+
+A aba "Seu salário" mede quanto a faixa de isenção do Imposto de Renda ficou para trás da inflação desde 1996 e quanto a pessoa pagaria com a tabela corrigida.
+
+- **Defasagem** = (IPCA acumulado desde dez/1995) ÷ (quanto a isenção subiu desde 1996, de R$ 900 ao valor de hoje) − 1. Até dez/2025: **120,48%**, isenção corrigida de **R$ 5.355,09**. A tela diz qual base usa (só a faixa de isenção; a redução da Lei 15.270 não entra no número) e mostra a segunda visão, a isenção efetiva em salário bruto. A Receita não publica um índice oficial; os 157% do Sindifisco usam outro método e só aparecem como citação.
+- **Comparação pessoal**: bruto → INSS progressivo → base → tabela de 2026 → redução da Lei 15.270 (que usa o salário **bruto**). A tabela corrigida multiplica limites e parcelas a deduzir pelo fator de defasagem, ao centavo. Sem dependentes, 13º e ajuste anual. Os casos de teste são os do Daniel (19/11/2026).
+- **Selo**: a defasagem é "exata" (identidade sobre números oficiais e confirmados); a comparação pessoal é "estimativa" enquanto a tabela do INSS de 2026 estiver `a-confirmar` no módulo de parâmetros.
+- **Privacidade**: o salário digitado fica só na memória da página; não é salvo (nem no `localStorage`) nem enviado.
+- Os números (tabela do IRPF, INSS, isenção desde 1996, IPCA número-índice) vêm do módulo comum de parâmetros e valem na data do cálculo (RN-M01). IPCA é valor fixo com fonte e data; a aba não consulta a internet.
+
+## Parâmetros comuns
+
+`vendor/stk-gov/stk-gov-parametros.js` e `.json` são cópias de `../_design-system/parametros/` (ADR-001): cada número tem fonte, vigência, tipo e status. O `scripts/build_data.py` lê o mesmo JSON (salário mínimo, fator de 0,925, jornada de 220 h, 3 cestas e 0,3571 do DIEESE) **na data do período da cesta** (`PERIOD_END`), não na de hoje, confere antes os casos de vigência que o JS também roda, e grava os parâmetros usados em `SourcesData.js` (aba "Fontes e método"). Sem vigência para a data, o build para.
+
 ## Configurações
 
 A engrenagem do topo abre o painel comum: tema (escuro, claro ou do sistema), capital ao abrir o app, opção de lembrar a renda, o que está guardado neste navegador, com opção de apagar, e a busca por versão nova. A renda só é guardada se a pessoa marcar a opção, fica só no navegador e sai ao desmarcar.
@@ -24,13 +38,13 @@ A engrenagem do topo abre o painel comum: tema (escuro, claro ou do sistema), ca
 
 ```bash
 python3 -m http.server 8086   # abra http://localhost:8086
-npm test                      # regras e dados
+npm test                      # regras, dados e parâmetros
 npm run test:ui               # tela, num Chrome headless
 ```
 
 ## Atualizar os dados
 
-1. Ajuste em `scripts/build_data.py` as constantes do período (`PERIOD_LABEL`, `PERIOD_FORM`, `COLLECTED_AT`), os nomes dos PDFs em `DOWNLOADS` e a data conferida na planilha.
+1. Ajuste em `scripts/build_data.py` as constantes do período (`PERIOD_LABEL`, `PERIOD_FORM`, `PERIOD_END`, `COLLECTED_AT`), os nomes dos PDFs em `DOWNLOADS` e a data conferida na planilha.
 2. `npm run dados:baixar` baixa as fontes para `data/raw/` e gera `src/infrastructure/data/`.
 3. `python3 scripts/compare_original.py` refaz `docs/CORRECOES.md`.
 4. `npm run versionar`, depois `npm test` e `npm run test:ui`.
@@ -41,9 +55,9 @@ Nunca edite `src/infrastructure/data/` à mão. O build para com erro se um nome
 
 | Camada | Pasta |
 |---|---|
-| Domain | `src/domain/`: regras da cesta e das estimativas de imóveis |
+| Domain | `src/domain/`: regras da cesta, das estimativas de imóveis e do Imposto de Renda (`IncomeTaxCalculator.js`) |
 | Application | `src/application/`: casos de uso |
-| Infrastructure | `src/infrastructure/`: dados gerados e CSV; `scripts/`: build |
+| Infrastructure | `src/infrastructure/`: dados gerados, CSV e `VendorParameters.js` (porta de parâmetros); `scripts/`: build |
 | UI | `src/ui/`, `index.html`, `css/style.css` |
 
 `fontes/index.html` é a página original, mantida sem alteração. A lista do que mudou está em `docs/CORRECOES.md`.

@@ -23,10 +23,10 @@
   <meta name="apple-mobile-web-app-title" content="Preços Brasil">
 
   <!-- Design system comum dos projetos 8.X (cópia de _design-system/, não editar aqui) + estilos do conteúdo -->
-  <script src="vendor/stk-gov/stk-gov-tema.js?v=20261119-1136" data-app="pesquisa-preco"></script>
-  <link rel="stylesheet" href="css/fonts.css?v=20261119-1136">
-  <link rel="stylesheet" href="vendor/stk-gov/stk-gov.css?v=20261119-1136">
-  <link rel="stylesheet" href="css/style.css?v=20261119-1136">
+  <script src="vendor/stk-gov/stk-gov-tema.js?v=20261119-1304" data-app="pesquisa-preco"></script>
+  <link rel="stylesheet" href="css/fonts.css?v=20261119-1304">
+  <link rel="stylesheet" href="vendor/stk-gov/stk-gov.css?v=20261119-1304">
+  <link rel="stylesheet" href="css/style.css?v=20261119-1304">
 </head>
 <body>
   <div id="appFatalError" class="app-fatal-error" role="alert" hidden>
@@ -83,6 +83,9 @@
           </button>
           <button type="button" class="sidebar-nav-item" data-tab="tabImoveis" role="tab" aria-selected="false" aria-controls="tabImoveis">
             <span class="nav-item-inner"><span class="nav-icon"><span data-stk-icon="building"></span></span><span class="nav-label">Imóveis</span></span>
+          </button>
+          <button type="button" class="sidebar-nav-item" data-tab="tabSalario" role="tab" aria-selected="false" aria-controls="tabSalario">
+            <span class="nav-item-inner"><span class="nav-icon"><span data-stk-icon="wallet"></span></span><span class="nav-label">Seu salário</span></span>
           </button>
           <button type="button" class="sidebar-nav-item" data-tab="tabFontes" role="tab" aria-selected="false" aria-controls="tabFontes">
             <span class="nav-item-inner"><span class="nav-icon"><span data-stk-icon="book"></span></span><span class="nav-label">Fontes e método</span></span>
@@ -233,6 +236,45 @@
           </section>
         </div>
 
+        <!-- SEU SALÁRIO -->
+        <div class="tab-pane" id="tabSalario" role="tabpanel">
+          <div class="page-head">
+            <h2>Seu salário</h2>
+            <p>A tabela do Imposto de Renda acompanhou a inflação desde 1996? Veja a defasagem e quanto você pagaria com a tabela corrigida.</p>
+          </div>
+          <section class="glass-panel panel" id="lagPanel">
+            <h3>Defasagem da tabela do IRPF</h3>
+            <div class="toolbar toolbar-flat">
+              <label class="field"><span>Medir a inflação até</span><select id="lagUntil"></select></label>
+              <span class="seal-slot" id="lagSeal"></span>
+            </div>
+            <div class="tile-grid" id="lagTiles"></div>
+            <p class="panel-sub" id="lagNote"></p>
+          </section>
+          <section class="glass-panel panel" id="salaryPanel">
+            <h3>Quanto você pagaria com a tabela corrigida</h3>
+            <div class="toolbar toolbar-flat">
+              <label class="field"><span>Seu salário bruto mensal (R$)</span><input type="number" id="salaryGrossInput" placeholder="Ex: 6000" min="0" max="1000000" step="50" inputmode="decimal" autocomplete="off"></label>
+              <span class="seal-slot" id="salarySeal"></span>
+            </div>
+            <p class="panel-sub">O que você digita fica só nesta página, na memória do navegador: não é salvo nem enviado. Sem dependentes, 13º salário ou ajuste anual.</p>
+            <div class="tile-grid" id="salaryTiles"></div>
+            <div class="table-wrap"><table class="data-table" id="salaryTable"></table></div>
+            <p class="panel-sub" id="salaryNote"></p>
+          </section>
+          <section class="glass-panel panel">
+            <h3>Como foi calculado</h3>
+            <dl class="method-list">
+              <dt>Defasagem</dt><dd>(Inflação acumulada do IPCA desde dez/1995) ÷ (quanto a faixa de isenção subiu desde 1996, de R$ 900,00 ao valor de hoje) − 1. A Receita não publica um índice oficial; o Sindifisco chega a 157% por outro método, que este app não reproduz.</dd>
+              <dt>Isenção corrigida</dt><dd>Isenção de hoje × (1 + defasagem). Limites e parcelas a deduzir da tabela vão pelo mesmo fator, ao centavo.</dd>
+              <dt>Seu imposto</dt><dd>Bruto − INSS (progressivo) = base. Imposto pela tabela − redução da Lei 15.270, que usa o salário bruto, e não a base. A base é a mesma nos dois cenários; só a tabela muda.</dd>
+              <dt>Isenção efetiva</dt><dd>A redução da Lei 15.270 faz quem ganha até R$ 5.000,00 brutos não pagar nada. A isenção corrigida, nos mesmos termos de salário bruto, protegeria mais.</dd>
+            </dl>
+            <h4 class="sub-title">Números usados</h4>
+            <ul class="plain-list" id="salaryInputs"></ul>
+          </section>
+        </div>
+
         <!-- FONTES -->
         <div class="tab-pane" id="tabFontes" role="tabpanel">
           <div class="page-head">
@@ -295,6 +337,20 @@
             </ul>
           </section>
           <section class="glass-panel panel">
+            <h3>Números fixos e parâmetros</h3>
+            <p class="panel-sub">Valores que não vêm das tabelas acima, com fonte, data e situação. "A confirmar" quer dizer que a fonte primária ainda não foi conferida; esses números marcam o resultado como estimativa.</p>
+            <div class="table-wrap"><table class="data-table" id="parameterTable"></table></div>
+          </section>
+          <section class="glass-panel panel">
+            <h3>Imposto de Renda e inflação (aba Seu salário)</h3>
+            <ul class="link-list">
+              <li><a href="https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/tabelas/2026" target="_blank" rel="noopener noreferrer">Receita Federal: tabela do IRPF de 2026</a></li>
+              <li><a href="https://www.gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/tabelas" target="_blank" rel="noopener noreferrer">Receita Federal: tabelas de anos anteriores (isenção desde 1996)</a></li>
+              <li><a href="https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2025/lei/l15270.htm" target="_blank" rel="noopener noreferrer">Lei 15.270/2025: redução do imposto até R$ 7.350,00 (Planalto)</a></li>
+              <li><a href="https://sidra.ibge.gov.br/tabela/1737" target="_blank" rel="noopener noreferrer">IBGE: IPCA, número-índice (SIDRA tabela 1737)</a></li>
+            </ul>
+          </section>
+          <section class="glass-panel panel">
             <h3>Prova de origem (SHA-256)</h3>
             <p class="panel-sub">Baixe o arquivo na fonte e compare a impressão digital. Uma diferença pode indicar apenas que a fonte republicou o arquivo.</p>
             <div class="table-wrap"><table class="data-table" id="hashTable"></table></div>
@@ -316,11 +372,12 @@
     <button type="button" class="bottom-nav-item" data-tab="tabCapitais"><span><span data-stk-icon="basket"></span></span><span class="bottom-nav-label">Cesta</span></button>
     <button type="button" class="bottom-nav-item" data-tab="tabMunicipios"><span><span data-stk-icon="mapPin"></span></span><span class="bottom-nav-label">SP</span></button>
     <button type="button" class="bottom-nav-item" data-tab="tabImoveis"><span><span data-stk-icon="building"></span></span><span class="bottom-nav-label">Imóveis</span></button>
+    <button type="button" class="bottom-nav-item" data-tab="tabSalario"><span><span data-stk-icon="wallet"></span></span><span class="bottom-nav-label">Salário</span></button>
     <button type="button" class="bottom-nav-item" data-tab="tabFontes"><span><span data-stk-icon="book"></span></span><span class="bottom-nav-label">Fontes</span></button>
   </nav>
 
   <div class="stk-toast" id="appToast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="src/Program.js?v=20261119-1136"></script>
+  <script type="module" src="src/Program.js?v=20261119-1304"></script>
 </body>
 </html>

@@ -37,8 +37,15 @@ OUT = ROOT / 'src' / 'infrastructure' / 'data'
 
 PERIOD_LABEL = 'setembro de 2026'
 PERIOD_FORM = '092026'
+PERIOD_END = '2026-09-30'  # last day of the basket period: parameters are read at this date, not at today's date (RN-M01)
 COLLECTED_AT = '2026-11-04'
-MINIMUM_WAGE = 1621.00
+
+# Common parameters (ADR-001): vendor/stk-gov/ is a copy of _design-system/parametros/, so a clone of this repository alone still builds.
+PARAMETERS_FILE = ROOT / 'vendor' / 'stk-gov' / 'stk-gov-parametros.json'
+VIGENCIA_CASES_FILE = ROOT / 'vendor' / 'stk-gov' / 'stk-gov-parametros-casos.json'
+# Filled by load_parameters() at the start of main(): minimum wage in force in the basket period and the DIEESE rules
+MINIMUM_WAGE = NET_WAGE_FACTOR = MONTHLY_WORK_HOURS = BASKETS_PER_FAMILY = FOOD_BUDGET_SHARE = None
+PARAMETERS_USED = []
 
 USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/130 Safari/537.36'
 DIEESE_QUERY_URL = 'https://www.dieese.org.br/cesta/produto'
@@ -104,6 +111,49 @@ class SourceError(Exception):
 
 def fail(message):
     raise SourceError(message)
+
+
+def pick_vigencia(vigencias, iso_date):
+    """Same rule as escolherVigencia() of the JS module: vigenteDesde <= date <= vigenteAte (None = in force). ISO dates compare as text."""
+    for v in vigencias:
+        if v['vigenteDesde'] <= iso_date and (v['vigenteAte'] is None or iso_date <= v['vigenteAte']):
+            return v
+    return None
+
+
+def check_vigencia_cases(cases):
+    """Runs the cases shared with the JS tests (casos-vigencia.json). Stops the build if the Python rule diverges."""
+    for case in cases:
+        found = pick_vigencia(case['vigencias'], case['data'])
+        got = found['valor'] if found else None
+        if got != case['esperado']:
+            fail(f'Regra de vigência diverge do JS no caso "{case["nome"]}": obtido {got}, esperado {case["esperado"]}')
+
+
+def load_parameters():
+    """Reads the common parameters at the basket period date and records which ones the build used."""
+    global MINIMUM_WAGE, NET_WAGE_FACTOR, MONTHLY_WORK_HOURS, BASKETS_PER_FAMILY, FOOD_BUDGET_SHARE
+    if not PARAMETERS_FILE.exists() or not VIGENCIA_CASES_FILE.exists():
+        fail('vendor/stk-gov/stk-gov-parametros*.json não encontrado: rode node ../_design-system/sync.mjs')
+    parameters = json.loads(PARAMETERS_FILE.read_text(encoding='utf-8'))['parametros']
+    check_vigencia_cases(json.loads(VIGENCIA_CASES_FILE.read_text(encoding='utf-8'))['casos'])
+
+    def vigente(param_id):
+        if param_id not in parameters:
+            fail(f'Parâmetro desconhecido: {param_id}')
+        found = pick_vigencia(parameters[param_id]['vigencias'], PERIOD_END)
+        if not found:
+            fail(f'Parâmetro {param_id} sem vigência em {PERIOD_END}: o período da pesquisa não tem valor (RN-M01)')
+        PARAMETERS_USED.append(dict(
+            id=param_id, value=found['valor'], referenceDate=found['dataReferencia'], inForceSince=found['vigenteDesde'],
+            kind=found['tipo'], status=found['status'], source=found['fonte']['titulo'], url=found['fonte']['url']))
+        return found['valor']
+
+    MINIMUM_WAGE = vigente('salario_minimo')
+    NET_WAGE_FACTOR = vigente('dieese_fator_salario_liquido')
+    MONTHLY_WORK_HOURS = vigente('jornada_mensal_horas')
+    BASKETS_PER_FAMILY = vigente('cestas_por_familia')
+    FOOD_BUDGET_SHARE = vigente('participacao_alimentacao_orcamento')
 
 
 def fetch(url, data=None):
@@ -221,8 +271,8 @@ def build_basket(index):
         if abs(item_sum - published) > 0.07:
             fail(f'{city}: soma dos itens {item_sum:.2f} difere do total {published}')
 
-        wage_percent = published / (MINIMUM_WAGE * 0.925) * 100
-        work_minutes = published / MINIMUM_WAGE * 220 * 60
+        wage_percent = published / (MINIMUM_WAGE * NET_WAGE_FACTOR) * 100
+        work_minutes = published / MINIMUM_WAGE * MONTHLY_WORK_HOURS * 60
         if abs(wage_percent - official['wagePercent']) > 0.011:
             fail(f'{city}: % do salário mínimo {wage_percent:.2f} difere de {official["wagePercent"]}')
         if abs(work_minutes - (official['workHours'] * 60 + official['workMinutes'])) > 1.01:
@@ -237,8 +287,8 @@ def build_basket(index):
             publishedWagePercent=official['wagePercent'], publishedWorkHours=official['workHours'], publishedWorkMinutes=official['workMinutes'],
         ))
     capitals.sort(key=lambda c: c['capital'])
-    if abs(max(c['publishedTotal'] for c in capitals) * 3 / 0.3571 - needed_wage) > 0.05:
-        fail('Salário mínimo necessário não fecha com 3 cestas / 0,3571')
+    if abs(max(c['publishedTotal'] for c in capitals) * BASKETS_PER_FAMILY / FOOD_BUDGET_SHARE - needed_wage) > 0.05:
+        fail(f'Salário mínimo necessário não fecha com {BASKETS_PER_FAMILY} cestas / {FOOD_BUDGET_SHARE}')
     return dict(period=PERIOD_LABEL, minimumWage=MINIMUM_WAGE, neededWage=needed_wage, neededWageMultiple=needed_multiple,
                 quantities={str(k): v for k, v in QUANTITIES.items()}, capitals=capitals)
 
@@ -393,7 +443,7 @@ def build_sources():
     combined = hashlib.sha256(b''.join(path.read_bytes() for path in dieese_files)).hexdigest()
     files = [dict(file=relative, url=url, sha256=digest(RAW / relative)) for relative, url in DOWNLOADS.items()]
     files.append(dict(file=f'dieese/p*_t*.html ({len(dieese_files)} consultas)', url='https://www.dieese.org.br/cesta/', sha256=combined))
-    return dict(collectedAt=COLLECTED_AT, files=files)
+    return dict(collectedAt=COLLECTED_AT, files=files, parameters=PARAMETERS_USED)
 
 
 def write_module(name, export, value, source_note, one_line_per_item=False):
@@ -412,6 +462,7 @@ def write_module(name, export, value, source_note, one_line_per_item=False):
 def main():
     if '--baixar' in sys.argv:
         download_sources()
+    load_parameters()
     _, index = load_ibge()
     basket = build_basket(index)
     real_estate = build_real_estate(index)

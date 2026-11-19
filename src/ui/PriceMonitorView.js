@@ -2,8 +2,8 @@
  * UI / src/ui/PriceMonitorView.js
  * Renders the tabs. Every value that comes from data goes through escapeHtml.
  */
-import { KIND } from '../domain/MunicipalityCoverage.js?v=20261119-1136';
-import { SVG_ICONS } from './SvgIcons.js?v=20261119-1136';
+import { KIND } from '../domain/MunicipalityCoverage.js?v=20261119-1304';
+import { SVG_ICONS } from './SvgIcons.js?v=20261119-1304';
 
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const wholeCurrency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
@@ -75,6 +75,9 @@ export class PriceMonitorView {
     this.fillEstimateCities();
     this.renderRealEstate();
     this.renderHashes();
+    this.renderParameters();
+    this.fillLagMonths();
+    this.renderSalary();
     this.bindEvents();
   }
 
@@ -84,6 +87,8 @@ export class PriceMonitorView {
     this.$('breakdownCapital').addEventListener('change', () => this.renderBreakdown());
     this.$('customWageCapital').addEventListener('change', () => this.renderCustomWage());
     this.$('customWageInput').addEventListener('input', () => this.renderCustomWage());
+    this.$('lagUntil').addEventListener('change', () => this.renderSalary());
+    this.$('salaryGrossInput').addEventListener('input', () => this.renderSalary());
     this.$('municipalitySearch').addEventListener('input', () => this.renderMunicipalities({ resetPage: true }));
     this.$('municipalityRegion').addEventListener('change', () => this.renderMunicipalities({ resetPage: true }));
     this.$('municipalityPrev').addEventListener('click', () => this.goToMunicipalityPage(this.municipalityPage - 1));
@@ -352,6 +357,100 @@ export class PriceMonitorView {
       : '';
   }
 
+  fillLagMonths() {
+    const months = this.service.lagMonths();
+    this.$('lagUntil').innerHTML = months.map((m, i) => `<option value="${escapeHtml(m.value)}">${escapeHtml(m.label)}${i === 0 ? ' (ano fechado)' : (i === months.length - 1 ? ' (último mês)' : '')}</option>`).join('');
+  }
+
+  /** Seal as text and colour, with the reason in the tooltip: the word carries the meaning, the colour only helps. */
+  static sealBadge(seal) {
+    const exact = seal === 'exato';
+    const reason = exact
+      ? 'Fórmula exata e todos os números oficiais e confirmados'
+      : 'Algum número ainda a confirmar na fonte primária, ou a fórmula depende de premissas';
+    return `<span class="badge-status ${exact ? 'badge-ok' : 'badge-alerta'}" title="${escapeHtml(reason)}">${exact ? 'Exato' : 'Estimativa'}</span>`;
+  }
+
+  /** The numbers behind a result: what each is, its value, period and status (official/estimate, confirmed or to confirm). */
+  static inputRows(inputs) {
+    const names = {
+      ipca_numero_indice: 'IPCA, número-índice (IBGE, SIDRA 1737)',
+      irpf_isencao_mensal: 'Limite de isenção do IRPF (Receita Federal)',
+      tabela_irpf_mensal: 'Tabela do IRPF e redução da Lei 15.270 (Receita Federal)',
+      tabela_inss_empregado: 'Tabela do INSS do empregado',
+    };
+    return inputs.map(i => `<li>${escapeHtml(names[i.id] ?? i.id)}${typeof i.valor === 'number' ? `: <span class="mono">${escapeHtml(money(i.valor))}</span>` : ''} · ${escapeHtml(i.periodo)} · <span class="muted">${i.tipo === 'oficial' ? 'oficial' : 'estimativa'}, ${i.status === 'confirmado' ? 'confirmado' : 'a confirmar'}</span></li>`).join('');
+  }
+
+  renderSalary() {
+    const gross = Number(this.$('salaryGrossInput').value);
+    const typed = this.$('salaryGrossInput').value !== '';
+    let result;
+    try {
+      result = this.service.incomeTaxLag({ grossIncome: gross > 0 ? gross : 0, untilMonth: this.$('lagUntil').value || undefined });
+    } catch (error) {
+      this.$('lagTiles').innerHTML = '';
+      this.$('lagNote').textContent = error.message;
+      return;
+    }
+    const { lag, personal } = result;
+    const percentage = value => `${decimal.format(value)}%`;
+    this.lastSalary = result;
+    this.$('lagSeal').innerHTML = PriceMonitorView.sealBadge(lag.selo);
+    this.$('lagTiles').innerHTML = [
+      tile('A tabela está defasada em', percentage(lag.valor.lagPct), `Inflação de ${percentage((lag.inflationFactor - 1) * 100)} contra ${percentage((lag.currentExemption / lag.startExemption - 1) * 100)} de correção da isenção`),
+      tile('Isenção hoje', money(lag.currentExemption), `Em 1996: ${money(lag.startExemption)}`),
+      tile('Isenção corrigida seria', money(lag.correctedExemption), 'Por mês, de base de cálculo'),
+      ...(lag.effective ? [tile('Isenção efetiva hoje (salário bruto)', wholeMoney(lag.effective.currentGross), `Corrigida: ${money(lag.effective.correctedGross)} brutos (${percentage(lag.effective.pctAbove)} a mais)`)] : []),
+    ].join('');
+    this.$('lagNote').textContent = `${lag.base}. Os 157% do Sindifisco usam outro método e não são calculados aqui.`;
+    this.$('salaryInputs').innerHTML = PriceMonitorView.inputRows(personal ? personal.insumos : lag.insumos);
+
+    if (!personal) {
+      this.$('salarySeal').innerHTML = '';
+      this.$('salaryTiles').innerHTML = '';
+      this.$('salaryTable').innerHTML = '';
+      this.$('salaryNote').textContent = typed && gross < 0 ? 'Informe um salário maior que zero.' : 'Informe seu salário bruto para ver a comparação.';
+      return;
+    }
+    const v = personal.valor;
+    this.$('salarySeal').innerHTML = PriceMonitorView.sealBadge(personal.selo);
+    this.$('salaryTiles').innerHTML = [
+      tile('Imposto pela regra de 2026', money(v.tax2026), 'Tabela atual, já com a redução da Lei 15.270'),
+      tile('Com a tabela corrigida', money(v.correctedTax), `Isenção de ${money(lag.correctedExemption)}`),
+      tile('Você pagaria a menos, por mês', money(v.monthlyDifference)),
+      tile('Em 12 meses', money(v.annualDifference), 'Sem 13º nem ajuste anual'),
+    ].join('');
+    const rows = [
+      ['Salário bruto', v.grossIncome],
+      ['INSS (progressivo)', -v.inss],
+      [v.usesSimplifiedDiscount ? 'Dedução usada: desconto simplificado' : 'Dedução usada: INSS', -v.deduction],
+      ['Base de cálculo', v.base],
+      ['Imposto pela tabela de 2026', v.tableTax],
+      ['Redução da Lei 15.270 (sobre o bruto)', -v.reduction],
+      ['Imposto em 2026', v.tax2026],
+      ['Imposto pela tabela corrigida', v.correctedTax],
+    ];
+    this.$('salaryTable').innerHTML = table([
+      { label: 'Passo', cell: r => escapeHtml(r[0]) },
+      { label: 'Valor', numeric: true, cell: r => money(r[1]) },
+    ], rows);
+    this.$('salaryNote').textContent = personal.selo === 'exato'
+      ? ''
+      : 'Estimativa: a tabela do INSS de 2026 ainda está marcada "a confirmar" (ver Números usados).';
+  }
+
+  renderParameters() {
+    const used = this.service.sources.parameters ?? [];
+    this.$('parameterTable').innerHTML = table([
+      { label: 'Número', cell: p => `<span class="mono">${escapeHtml(p.id)}</span>` },
+      { label: 'Valor', numeric: true, cell: p => escapeHtml(String(p.value)) },
+      { label: 'Referência', cell: p => escapeHtml(p.referenceDate) },
+      { label: 'Situação', cell: p => `${p.kind === 'oficial' ? 'oficial' : 'estimativa'}, ${p.status === 'confirmado' ? 'confirmado' : 'a confirmar'}` },
+      { label: 'Fonte', cell: p => (p.url ? `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(p.source)}</a>` : escapeHtml(p.source)) },
+    ], used, 'Sem parâmetros registrados.');
+  }
+
   renderHashes() {
     this.$('hashTable').innerHTML = table([
       { label: 'Arquivo', cell: f => `<a href="${escapeHtml(f.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.file)}</a>` },
@@ -387,6 +486,16 @@ export class PriceMonitorView {
         ['Código IBGE', 'Cidade', 'UF', 'Região', 'Compra (R$/m²)', 'Compra em 12 meses (%)', 'Aluguel (R$/m²)', 'Aluguel em 12 meses (%)', 'Rentabilidade ao ano (%)'],
         ...this.lastCities.map(c => [c.ibgeCode, c.city, c.uf, c.macroRegion, c[`${s}Sale`], c[`${s}SaleChange12m`], c[`${s}Rent`], c[`${s}RentChange12m`], c[`${s}Yield`]]),
       ] };
+    }
+    if (tabId === 'tabSalario') {
+      const { lag, personal } = this.lastSalary;
+      const rows = [
+        ['Defasagem da tabela do IRPF (%)', round2(lag.valor.lagPct)], ['Isenção de hoje (R$)', lag.currentExemption], ['Isenção corrigida (R$)', lag.correctedExemption],
+        ['Inflação até', lag.untilMonth], ['Selo', lag.selo],
+        ...(personal ? [['Salário bruto (R$)', personal.valor.grossIncome], ['Imposto em 2026 (R$)', personal.valor.tax2026], ['Imposto com a tabela corrigida (R$)', personal.valor.correctedTax],
+          ['Diferença por mês (R$)', personal.valor.monthlyDifference], ['Diferença em 12 meses (R$)', personal.valor.annualDifference], ['Selo da comparação', personal.selo]] : []),
+      ];
+      return { name: 'seu-salario-defasagem-irpf.csv', rows: [['Item', 'Valor'], ...rows] };
     }
     if (tabId === 'tabFontes') {
       return { name: 'fontes-sha256.csv', rows: [['Arquivo', 'URL', 'SHA-256'], ...this.service.sources.files.map(f => [f.file, f.url, f.sha256])] };

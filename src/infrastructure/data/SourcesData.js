@@ -53,5 +53,57 @@ export const SOURCES_DATA = Object.freeze({
    "url": "https://www.dieese.org.br/cesta/",
    "sha256": "8fd6184561d6dd0e0036d4cf6f6d42c36c4645e634b03d90f4348948da53c0c8"
   }
+ ],
+ "parameters": [
+  {
+   "id": "salario_minimo",
+   "value": 1621.0,
+   "referenceDate": "2026-01-01",
+   "inForceSince": "2026-01-01",
+   "kind": "oficial",
+   "status": "confirmado",
+   "source": "Decreto 12.797, de 23/12/2025 (DOU de 24/12/2025)",
+   "url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2025/decreto/d12797.htm"
+  },
+  {
+   "id": "dieese_fator_salario_liquido",
+   "value": 0.925,
+   "referenceDate": "2016-01-01",
+   "inForceSince": "2016-01-01",
+   "kind": "oficial",
+   "status": "a-confirmar",
+   "source": "DIEESE, metodologia da Cesta Básica (desconto de 7,5% da Previdência)",
+   "url": "https://www.dieese.org.br/metodologia/metodologiaCestaBasica2016.pdf"
+  },
+  {
+   "id": "jornada_mensal_horas",
+   "value": 220,
+   "referenceDate": "2016-01-01",
+   "inForceSince": "2016-01-01",
+   "kind": "oficial",
+   "status": "a-confirmar",
+   "source": "DIEESE, metodologia; CF art. 7º, XIII (44 h semanais)",
+   "url": "https://www.dieese.org.br/metodologia/metodologiaCestaBasica2016.pdf"
+  },
+  {
+   "id": "cestas_por_familia",
+   "value": 3,
+   "referenceDate": "2016-01-01",
+   "inForceSince": "2016-01-01",
+   "kind": "oficial",
+   "status": "a-confirmar",
+   "source": "DIEESE, metodologia da Cesta Básica",
+   "url": "https://www.dieese.org.br/metodologia/metodologiaCestaBasica2016.pdf"
+  },
+  {
+   "id": "participacao_alimentacao_orcamento",
+   "value": 0.3571,
+   "referenceDate": "2016-01-01",
+   "inForceSince": "2016-01-01",
+   "kind": "oficial",
+   "status": "a-confirmar",
+   "source": "DIEESE, metodologia (POF 1994/1995)",
+   "url": "https://www.dieese.org.br/metodologia/metodologiaCestaBasica2016.pdf"
+  }
  ]
 });

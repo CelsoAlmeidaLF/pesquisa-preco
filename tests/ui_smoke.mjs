@@ -84,7 +84,7 @@ const capturar = async nome => {
   const { result } = await cdp('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
   await writeFile(join(process.env.CAPTURAS, `${nome}.png`), Buffer.from(result.data, 'base64'));
 };
-const ABAS = ['tabPanorama', 'tabCapitais', 'tabMunicipios', 'tabImoveis', 'tabFontes'];
+const ABAS = ['tabPanorama', 'tabCapitais', 'tabMunicipios', 'tabImoveis', 'tabSalario', 'tabFontes'];
 
 try {
   await cdp('Runtime.enable');
@@ -184,8 +184,31 @@ try {
   assert((await texto('estimateNote')).includes('200 m²'), 'Aviso acima de 200 m² no comercial');
   await definir('estimateArea', '70');
   await capturar('desktop-imoveis');
+  // Valores de 2026 (tabela do IRPF com a Lei 15.270 e IPCA até dez/2025): mudam junto com a vigência de janeiro (ADR-001, revisão em 15/01/2027)
+  await aba('tabSalario');
+  const defasagem = await texto('lagTiles');
+  assert(['120,48%', '2.428,80', '5.355,09', '5.996,0'].every(v => defasagem.includes(v)), 'Seu salário: tabela 120,48% defasada, isenção de R$ 2.428,80 e corrigida de R$ 5.355,09');
+  assert((await texto('lagSeal')) === 'Exato' && (await texto('lagNote')).includes('Lei 15.270 não entra'), 'Defasagem tem selo Exato e diz qual base usa');
+  assert(await avaliar('salaryTiles.children.length') === 0 && (await texto('salaryNote')).includes('Informe seu salário bruto'), 'Sem salário, a comparação orienta o preenchimento');
+  await definir('salaryGrossInput', '6000');
+  const pessoal = await texto('salaryTiles');
+  assert(await avaliar('salaryTiles.children.length') === 4 && ['385,10', '0,26', '384,84', '4.618,08'].every(v => pessoal.includes(v)), 'Salário de R$ 6.000: paga R$ 385,10 hoje, R$ 0,26 com a tabela corrigida (R$ 384,84 por mês)');
+  assert((await texto('salarySeal')) === 'Estimativa' && (await texto('salaryNote')).includes('INSS'), 'Comparação pessoal é estimativa enquanto o INSS estiver a confirmar, e diz por quê');
+  assert((await texto('salaryTable')).includes('564,85') && (await texto('salaryTable')).includes('179,75'), 'Passo a passo mostra a tabela (R$ 564,85) e a redução (R$ 179,75)');
+  assert(await avaliar('document.querySelectorAll("#salaryInputs li").length') === 5, 'Lista os 5 números usados com a situação de cada um');
+  assert(!(await avaliar('Object.values(localStorage).some(v => v.includes("6000"))')) && !(await avaliar('Object.keys(localStorage).some(k => /sal/i.test(k))')), 'O salário digitado não vai para o armazenamento do navegador');
+  await definir('lagUntil', '2026-10');
+  assert((await texto('lagTiles')).includes('129,'), 'Medir até out/2026 sobe a defasagem para 129%');
+  await definir('lagUntil', '2025-12');
+  for (const invalido of ['-50', '']) {
+    await definir('salaryGrossInput', invalido);
+    assert(await avaliar('salaryTiles.children.length') === 0 && (await texto('salaryNote')).length > 0, `Salário inválido (${invalido || 'vazio'}) não calcula e orienta`);
+  }
+  await definir('salaryGrossInput', '');
+  await capturar('desktop-salario');
   await aba('tabFontes');
-  assert(await avaliar('document.querySelectorAll("#tabFontes .link-list a").length') === 10, '10 links de fontes');
+  assert(await avaliar('document.querySelectorAll("#tabFontes .link-list a").length') === 14, '14 links de fontes');
+  assert(await avaliar('document.querySelectorAll("#parameterTable tbody tr").length') === 5 && (await texto('parameterTable')).includes('a confirmar'), 'Fontes lista os 5 parâmetros do build, com a situação (a confirmar)');
   assert(await avaliar('[...document.querySelectorAll("#hashTable .hash")].every(e => /^[0-9a-f]{64}$/.test(e.textContent))'), 'Hashes SHA-256 na tela');
   await capturar('desktop-fontes');
   await avaliar('document.querySelector(".sidebar-nav-item[data-tab=tabPanorama]").click()');
@@ -222,6 +245,10 @@ try {
     assert(await avaliar('getComputedStyle(document.querySelector("#capitalTable td")).display') === 'flex', 'Tabela vira cartões');
     await definir('customWageInput', '3000');
     assert(await avaliar('customWageTiles.children.length === 4 && [...document.querySelectorAll("#customWageTiles .tile > *")].every(e => e.scrollWidth <= e.clientWidth + 1)') && await semRolagem(), 'Cartões da renda cabem sem cortar');
+    await avaliar('document.querySelector(".bottom-nav-item[data-tab=tabSalario]").click()'); await esperar(200);
+    await definir('salaryGrossInput', '6000');
+    assert(await avaliar('salaryTiles.children.length === 4 && [...document.querySelectorAll("#tabSalario .tile > *")].every(e => e.scrollWidth <= e.clientWidth + 1)') && await semRolagem(), 'Seu salário: cartões cabem sem cortar e sem rolagem lateral');
+    await definir('salaryGrossInput', '');
     await avaliar('document.querySelector(".bottom-nav-item[data-tab=tabPanorama]").click()'); await esperar(200);
     assert(await avaliar('[...document.querySelectorAll("#tabPanorama .tile-value")].every(e => e.scrollWidth <= e.clientWidth + 1)'), 'Valores dos cartões cabem sem cortar');
   }

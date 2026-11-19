@@ -2,8 +2,8 @@
 
 /**
  * @param {Object} deps
- * @param {import('../application/PreferencesService.js?v=20261119-1136').PreferencesService} deps.preferences
- * @param {import('./PriceMonitorView.js?v=20261119-1136').PriceMonitorView} deps.view
+ * @param {import('../application/PreferencesService.js?v=20261119-1304').PreferencesService} deps.preferences
+ * @param {import('./PriceMonitorView.js?v=20261119-1304').PriceMonitorView} deps.view
  */
 export function preferencesSection({ preferences, view }) {
   return {
